@@ -594,9 +594,9 @@ def compute_leaderboard(
     else:
         gp["current_streak"], gp["best_streak"] = [], []
 
-    # Order leaderboard
+    # Order leaderboard — rank by highest ELO (ties: more wins, then higher win%)
     lb = gp.sort_values(
-        ["wins", "win_rate", "elo"], ascending=[False, False, False]
+        ["elo", "wins", "win_rate"], ascending=[False, False, False]
     ).reset_index(drop=True)
 
     # Head-to-Head (times row finished ahead of column)
@@ -924,13 +924,12 @@ if mode == "General":
                 )
 
             # ── Sexy Leaderboard: rank, medals, win% progress, streak flair ──
-            lb_disp = lb.copy()
+            lb_disp = lb.copy()  # lb is already ELO-sorted from compute_leaderboard
             lb_disp.insert(0, "#", np.arange(1, len(lb_disp) + 1))
             medals = {1: "🥇", 2: "🥈", 3: "🥉"}
             lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
             lb_disp["🔥"] = np.where(lb_disp["current_streak"] >= 3, "🔥", "")
-            lb_disp["Win%"] = lb_disp["win_rate"] * 100.0  # 0..100 for ProgressColumn
-            lb = lb.sort_values(by="elo", ascending=False).reset_index(drop=True)
+            lb_disp["Win%"] = lb_disp["win_rate"] * 100.0
 
             show_cols = [
                 "#",
