@@ -805,8 +805,12 @@ if mode == "General":
             on_click=lambda: st.session_state.update({ms_key: []}),
         )
 
+        # Date range fallback: use today if no valid dates
         min_date = joined["played_at"].dt.date.min()
         max_date = joined["played_at"].dt.date.max()
+        if not min_date or not max_date or pd.isna(min_date) or pd.isna(max_date):
+            min_date = date.today()
+            max_date = date.today()
         start_date, end_date = c2.date_input("Date range", value=(min_date, max_date))
 
         # If exactly one game is selected, show a polished info card (+ BGG link if provided)
@@ -933,7 +937,7 @@ if mode == "General":
                 metric_card(
                     "🏆 Champion",
                     champ["display_name"] if champ is not None else None,
-                    f"ELO {int(champ['elo'])}" if champ is not None else None,
+                    f"ELO {champ['elo']:.0f}" if champ is not None else None,
                 )
 
             with cB:
