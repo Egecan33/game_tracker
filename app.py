@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
-from datetime import date
+from datetime import date, datetime, time, timedelta
 
 import numpy as np
 import pandas as pd
@@ -173,9 +173,7 @@ def sb_select_sessions_joined() -> pd.DataFrame:
 
     # Normalize date columns
     if "played_at" in sessions.columns:
-        sessions["played_at"] = pd.to_datetime(
-            sessions["played_at"], errors="coerce"
-        ).dt.date
+        sessions["played_at"] = pd.to_datetime(sessions["played_at"], errors="coerce")
 
     # Merge chain
     joined = (
@@ -367,11 +365,14 @@ def compute_leaderboard(
 
     df = joined.copy()
 
-    if game_filter:
+    if game_filter is not None:
+        if len(game_filter) == 0:
+            # Return empty tables if no games selected
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
         df = df[df["game_name"].isin(game_filter)]
 
     if date_range and all(date_range):
-        start, end = date_range
+        start, end = _range_to_df_tz(df["played_at"], date_range[0], date_range[1])
         df = df[(df["played_at"] >= start) & (df["played_at"] <= end)]
 
     if df.empty:
@@ -380,7 +381,7 @@ def compute_leaderboard(
     # Resolve winners per-session
     df = df.sort_values(["played_at", "session_id"]).reset_index(drop=True)
     df["resolved_winner"] = False
-    for sid, g in df.groupby("session_id"):
+    for sid, g in df.groupby("session_id", sort=False):
         mask = resolve_winners(g)
         df.loc[g.index, "resolved_winner"] = mask.values
 
@@ -728,6 +729,23 @@ def render_h2h_heatmap(h2h_df: pd.DataFrame, title: str = "Head-to-Head") -> Non
     st.plotly_chart(fig, use_container_width=True)
 
 
+# TZ helper function
+def _range_to_df_tz(series: pd.Series, start_d, end_d):
+    s = pd.to_datetime(start_d)
+    e = pd.to_datetime(end_d) + pd.Timedelta(days=1) - pd.Timedelta(microseconds=1)
+    if pd.api.types.is_datetime64tz_dtype(series):
+        tz = series.dt.tz
+        if s.tzinfo is None:
+            s = s.tz_localize(tz)
+        else:
+            s = s.tz_convert(tz)
+        if e.tzinfo is None:
+            e = e.tz_localize(tz)
+        else:
+            e = e.tz_convert(tz)
+    return s, e
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Sidebar
 # ─────────────────────────────────────────────────────────────────────────────
@@ -787,8 +805,8 @@ if mode == "General":
             on_click=lambda: st.session_state.update({ms_key: []}),
         )
 
-        min_date = joined["played_at"].min()
-        max_date = joined["played_at"].max()
+        min_date = joined["played_at"].dt.date.min()
+        max_date = joined["played_at"].dt.date.max()
         start_date, end_date = c2.date_input("Date range", value=(min_date, max_date))
 
         # If exactly one game is selected, show a polished info card (+ BGG link if provided)
@@ -805,9 +823,12 @@ if mode == "General":
             notes = grow.get("notes", "")
 
             # Stats for current filter range
+            start_dt, end_dt = _range_to_df_tz(
+                joined["played_at"], start_date, end_date
+            )
             filt = joined[
                 (joined["game_name"] == gname)
-                & (joined["played_at"].between(start_date, end_date))
+                & (joined["played_at"].between(start_dt, end_dt))
             ]
             sessions_count = filt["session_id"].nunique()
             unique_players = filt["player_id"].nunique()
@@ -863,9 +884,12 @@ if mode == "General":
         else:
             # KPI
             k1, k2, k3, k4 = st.columns(4)
+            start_dt, end_dt = _range_to_df_tz(
+                joined["played_at"], start_date, end_date
+            )
             total_sessions = joined[
                 (joined["game_name"].isin(selected_games))
-                & (joined["played_at"].between(start_date, end_date))
+                & (joined["played_at"].between(start_dt, end_dt))
             ]["session_id"].nunique()
             total_players = lb.shape[0]
             total_games = len(selected_games)
@@ -1004,7 +1028,7 @@ if mode == "General":
                         width="small", help="Current winning streak"
                     ),
                     "Best Streak": st.column_config.NumberColumn(width="small"),
-                    "Last": st.column_config.DateColumn(format="YYYY-MM-DD"),
+                    "Last": st.column_config.DatetimeColumn(format="YYYY-MM-DD HH:mm"),
                     "🔥": st.column_config.TextColumn(
                         width="small", help="Hot streak (3+ wins)"
                     ),
@@ -1026,6 +1050,9 @@ if mode == "General":
                 recent.rename(columns=rename_map),
                 use_container_width=True,
                 hide_index=True,
+                column_config={
+                    "Date": st.column_config.DatetimeColumn(format="YYYY-MM-DD HH:mm")
+                },
             )
 
             st.download_button(
@@ -1064,6 +1091,12 @@ if mode == "Admin":
 
             c0, c1 = st.columns([1, 2])
             played_at = c0.date_input("Date", value=date.today())
+            played_time = c0.time_input(
+                "Time", value=datetime.now().replace(second=0, microsecond=0).time()
+            )
+            # Combine to a proper datetime (naive local time is fine here)
+            played_at_dt = datetime.combine(played_at, played_time)
+
             location = c1.text_input("Location", value="")
             notes = st.text_area("Notes (optional)", value="")
 
@@ -1257,7 +1290,7 @@ if mode == "Admin":
                     {
                         "id": sid,
                         "game_id": game_row["id"],
-                        "played_at": str(played_at),
+                        "played_at": played_at_dt.isoformat(),
                         "location": location.strip() or None,
                         "notes": notes.strip() or None,
                     },
