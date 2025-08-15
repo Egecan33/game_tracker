@@ -377,8 +377,8 @@ def compute_leaderboard(
         df["played_at"] = pd.to_datetime(df["played_at"], errors="coerce")
 
     if date_range and all(date_range):
-        start, end = date_range
-        df = df[(df["played_at"] >= start) & (df["played_at"] <= end)]
+        start, end = _range_to_df_tz(df["played_at"], date_range[0], date_range[1])
+        df = df[df["played_at"].between(start, end)]
 
     if df.empty:
         return EMPTY
