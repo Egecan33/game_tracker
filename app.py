@@ -1056,6 +1056,51 @@ if mode == "General":
                 },
             )
 
+            # ── Rating history chart ────────────────────────────────────────
+            st.subheader("📈 Player Rating Over Time")
+
+            # Choose players (defaults to top 3 by current ELO)
+            player_opts = lb["display_name"].tolist()
+            default_sel = player_opts[:3]
+            selected_players_rt = st.multiselect(
+                "Select players",
+                options=player_opts,
+                default=default_sel,
+            )
+
+            if selected_players_rt and not ratings_over_time.empty:
+                plot_df = ratings_over_time[
+                    ratings_over_time["player_name"].isin(selected_players_rt)
+                ]
+                if not plot_df.empty:
+                    # make sure it's sorted for nice lines
+                    plot_df = plot_df.sort_values(["player_name", "played_at"])
+
+                    fig = go.Figure()
+                    for pname, grp in plot_df.groupby("player_name", sort=False):
+                        fig.add_trace(
+                            go.Scatter(
+                                x=grp["played_at"],
+                                y=grp["elo"],
+                                mode="lines+markers",
+                                name=pname,
+                                hovertemplate="<b>%{text}</b><br>%{x|%Y-%m-%d %H:%M}<br>ELO: %{y:.0f}<extra></extra>",
+                                text=[pname] * len(grp),
+                            )
+                        )
+                    fig.update_layout(
+                        title="ELO progression (respects current filters)",
+                        xaxis_title="Date",
+                        yaxis_title="ELO",
+                        hovermode="x unified",
+                        margin=dict(l=0, r=0, t=60, b=0),
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("No data for selected players in current filters.")
+            else:
+                st.caption("Pick one or more players to see their rating history.")
+
             st.subheader("Head-to-Head (times row finished ahead of column)")
             render_h2h_heatmap(h2h, title="Head-to-Head (row finished ahead of column)")
 
