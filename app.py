@@ -261,34 +261,48 @@ def sb_delete_by_id(table: str, _id: str) -> bool:
 def resolve_winners(df_session_participants: pd.DataFrame) -> pd.Series:
     """
     Return a boolean Series (index aligned) for winners of that session.
-    Priority: explicit is_winner → lowest position → highest points → none.
+    Priority: explicit is_winner → (for competitive sessions) lowest position → highest points → none.
+    For co-op or solo sessions with no explicit winners, no one wins.
     """
-    if df_session_participants.empty:
+    df = df_session_participants
+    if df.empty:
         return pd.Series(dtype=bool)
 
-    if (
-        "is_winner" in df_session_participants.columns
-        and df_session_participants["is_winner"].any()
-    ):
-        return df_session_participants["is_winner"].fillna(False)
+    idx = df.index
 
-    if (
-        "position" in df_session_participants.columns
-        and df_session_participants["position"].notna().any()
-    ):
-        min_pos = df_session_participants["position"].min()
-        return df_session_participants["position"].eq(min_pos)
+    # 1) Respect explicit flags if any exist
+    if "is_winner" in df.columns and df["is_winner"].fillna(False).any():
+        return df["is_winner"].fillna(False)
 
-    if (
-        "points" in df_session_participants.columns
-        and df_session_participants["points"].notna().any()
-    ):
-        max_pts = df_session_participants["points"].max()
-        return df_session_participants["points"].eq(max_pts)
+    n = len(df)
 
-    return pd.Series(
-        [False] * len(df_session_participants), index=df_session_participants.index
+    # 2) Guard: solo or co-op (single non-empty team label for multiple players) → no winners if none flagged
+    teams_clean = (
+        df["team"].fillna("").astype(str).str.strip().str.upper()
+        if "team" in df.columns
+        else pd.Series([""] * n, index=idx)
     )
+    non_empty_labels = [t for t in teams_clean.unique().tolist() if t != ""]
+
+    if n == 1:
+        # Solo with no explicit winner = loss → no winner
+        return pd.Series([False], index=idx)
+
+    if len(non_empty_labels) == 1:
+        # Everyone on the same non-empty team (e.g., COOP) and no explicit winners → no winner
+        return pd.Series([False] * n, index=idx)
+
+    # 3) Competitive fallback: positions, then points
+    if "position" in df.columns and df["position"].notna().any():
+        min_pos = df["position"].min()
+        return df["position"].eq(min_pos)
+
+    if "points" in df.columns and df["points"].notna().any():
+        max_pts = df["points"].max()
+        return df["points"].eq(max_pts)
+
+    # 4) Nothing else → no winners
+    return pd.Series([False] * n, index=idx)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
