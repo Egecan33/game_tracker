@@ -655,10 +655,9 @@ if mode == "General":
         bcol1, bcol2 = c1.columns(2)
         if bcol1.button("All games", use_container_width=True):
             st.session_state[ms_key] = game_names
-            st.rerun()
+
         if bcol2.button("Clear", use_container_width=True):
             st.session_state[ms_key] = []
-            st.rerun()
 
         min_date = joined["played_at"].min()
         max_date = joined["played_at"].max()
