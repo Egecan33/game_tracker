@@ -356,12 +356,12 @@ def compute_leaderboard(
     exceptional_bonus: bool,
     exceptional_threshold: float,
     exceptional_points: float,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
-    Returns (leaderboard_df, h2h_df, recent_df) using the provided ELO configuration.
+    Returns (leaderboard_df, h2h_df, recent_df, ratings_over_time_df) using the provided ELO configuration.
     """
     if joined.empty:
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
     df = joined.copy()
 
@@ -411,6 +411,8 @@ def compute_leaderboard(
         gp["player_name"].astype(str) + " (" + gp["player_nick"].astype(str) + ")",
         gp["player_name"].astype(str),
     )
+    disp_map = dict(zip(gp["player_id"], gp["display_name"]))
+    ratings_timeline: List[Dict[str, Any]] = []
 
     # ELO calculations
     ratings: Dict[str, float] = {
@@ -593,6 +595,17 @@ def compute_leaderboard(
                 if mv >= float(exceptional_threshold) and pd.notna(top["player_id"]):
                     ratings[top["player_id"]] += float(exceptional_points)
 
+        played_at_dt = g["played_at"].iloc[0]
+        for pid in g["player_id"].tolist():
+            ratings_timeline.append(
+                {
+                    "played_at": played_at_dt,
+                    "player_id": pid,
+                    "player_name": disp_map.get(pid, str(pid)),
+                    "elo": ratings[pid],
+                }
+            )
+
     gp["elo"] = gp["player_id"].map(ratings)
 
     # Streaks
@@ -668,7 +681,11 @@ def compute_leaderboard(
         .sort_values(["played_at"], ascending=False)
     )
 
-    return lb, h2h_df, recent_slim
+    ratings_over_time = pd.DataFrame(ratings_timeline).sort_values(
+        ["played_at", "player_id"]
+    )
+
+    return lb, h2h_df, recent_slim, ratings_over_time
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -865,7 +882,7 @@ if mode == "General":
                 )
             st.divider()
 
-        lb, h2h, recent = compute_leaderboard(
+        lb, h2h, recent, ratings_over_time = compute_leaderboard(
             joined,
             selected_games,
             (start_date, end_date),
