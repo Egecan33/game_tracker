@@ -360,23 +360,24 @@ def compute_leaderboard(
     """
     Returns (leaderboard_df, h2h_df, recent_df, ratings_over_time_df) using the provided ELO configuration.
     """
+    EMPTY = (pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
     if joined.empty:
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        return EMPTY
 
     df = joined.copy()
 
     if game_filter is not None:
         if len(game_filter) == 0:
             # Return empty tables if no games selected
-            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+            return EMPTY
         df = df[df["game_name"].isin(game_filter)]
 
     if date_range and all(date_range):
-        start, end = _range_to_df_tz(df["played_at"], date_range[0], date_range[1])
+        start, end = date_range
         df = df[(df["played_at"] >= start) & (df["played_at"] <= end)]
 
     if df.empty:
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        return EMPTY
 
     # Resolve winners per-session
     df = df.sort_values(["played_at", "session_id"]).reset_index(drop=True)
