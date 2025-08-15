@@ -253,6 +253,24 @@ def sb_delete_by_id(table: str, _id: str) -> bool:
         return False
 
 
+def sb_delete_session(session_id: str) -> bool:
+    """Delete a session and all its participant rows (no DB cascade required)."""
+    if not supabase:
+        st.error("Supabase not configured.")
+        return False
+    try:
+        # 1) Remove participants for this session (safe even if none)
+        supabase.table("session_players").delete().eq(
+            "session_id", session_id
+        ).execute()
+        # 2) Remove the session itself
+        supabase.table("sessions").delete().eq("id", session_id).execute()
+        return True
+    except Exception as e:
+        st.error(f"Delete session failed: {e}")
+        return False
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Winner resolution
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1410,8 +1428,8 @@ if mode == "Admin":
             if st.button(
                 "Delete session", type="secondary", disabled=not bool(sid_options)
             ):
-                if sb_delete_by_id("sessions", to_delete):
-                    st.success("Session deleted (participants removed via cascade).")
+                if sb_delete_session(to_delete):
+                    st.success("Session and its participants deleted.")
                     st.cache_data.clear()
 
     # ------------------------- ELO Settings -------------------------
