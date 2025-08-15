@@ -173,7 +173,11 @@ def sb_select_sessions_joined() -> pd.DataFrame:
 
     # Normalize date columns
     if "played_at" in sessions.columns:
-        sessions["played_at"] = pd.to_datetime(sessions["played_at"], errors="coerce")
+        sessions["played_at"] = (
+            pd.to_datetime(sessions["played_at"], errors="coerce")
+            .dt.tz_localize("UTC")  # assume DB is UTC
+            .dt.tz_convert("Europe/Istanbul")  # convert to Turkey time
+        )
 
     # Merge chain
     joined = (
@@ -731,18 +735,17 @@ def render_h2h_heatmap(h2h_df: pd.DataFrame, title: str = "Head-to-Head") -> Non
 
 # TZ helper function
 def _range_to_df_tz(series: pd.Series, start_d, end_d):
+    tz = "Europe/Istanbul"
     s = pd.to_datetime(start_d)
     e = pd.to_datetime(end_d) + pd.Timedelta(days=1) - pd.Timedelta(microseconds=1)
-    if pd.api.types.is_datetime64tz_dtype(series):
-        tz = series.dt.tz
-        if s.tzinfo is None:
-            s = s.tz_localize(tz)
-        else:
-            s = s.tz_convert(tz)
-        if e.tzinfo is None:
-            e = e.tz_localize(tz)
-        else:
-            e = e.tz_convert(tz)
+    if s.tzinfo is None:
+        s = s.tz_localize(tz)
+    else:
+        s = s.tz_convert(tz)
+    if e.tzinfo is None:
+        e = e.tz_localize(tz)
+    else:
+        e = e.tz_convert(tz)
     return s, e
 
 
