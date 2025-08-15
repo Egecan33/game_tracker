@@ -857,53 +857,57 @@ if mode == "General":
             )
             most_active = lb.loc[lb["games_played"].idxmax()] if not lb.empty else None
 
-        cA, cB, cC, cD = st.columns(4)
+            cA, cB, cC, cD = st.columns(4)
 
-        def metric_card(title, value, delta, color="green"):
-            display_value = value if value else "—"
-            display_delta = delta if delta else ""
-            st.markdown(
-                f"""
-                <div style="text-align:center; padding:0.5em; border-radius:8px; background-color:rgba(240,240,240,0.5);">
-                    <div style="font-size:0.9em; font-weight:bold;">{title}</div>
-                    <div style="font-size:1.1em; white-space:normal; word-break:break-word;">{display_value}</div>
-                    <div style="color:{color}; font-size:0.85em;">{display_delta}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            def metric_card(title, value, delta, color="green"):
+                display_value = value if value else "—"
+                display_delta = delta if delta else ""
+                st.markdown(
+                    f"""
+                    <div style="text-align:center; padding:0.5em; border-radius:8px; background-color:rgba(240,240,240,0.5);">
+                        <div style="font-size:0.9em; font-weight:bold;">{title}</div>
+                        <div style="font-size:1.1em; white-space:normal; word-break:break-word;">{display_value}</div>
+                        <div style="color:{color}; font-size:0.85em;">{display_delta}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-        with cA:
-            metric_card(
-                "🏆 Champion",
-                champ["display_name"] if champ is not None else None,
-                f"ELO {int(champ['elo'])}" if champ is not None else None,
-            )
+            with cA:
+                metric_card(
+                    "🏆 Champion",
+                    champ["display_name"] if champ is not None else None,
+                    f"ELO {int(champ['elo'])}" if champ is not None else None,
+                )
 
-        with cB:
-            metric_card(
-                "🔥 Longest Streak",
-                longest["display_name"] if longest is not None else None,
-                f"{int(longest['best_streak'])} wins" if longest is not None else None,
-            )
+            with cB:
+                metric_card(
+                    "🔥 Longest Streak",
+                    longest["display_name"] if longest is not None else None,
+                    (
+                        f"{int(longest['best_streak'])} wins"
+                        if longest is not None
+                        else None
+                    ),
+                )
 
-        with cC:
-            metric_card(
-                "🎯 Best Win% (≥3 GP)",
-                best_wr["display_name"] if best_wr is not None else None,
-                f"{best_wr['win_rate']*100:.0f}%" if best_wr is not None else None,
-            )
+            with cC:
+                metric_card(
+                    "🎯 Best Win% (≥3 GP)",
+                    best_wr["display_name"] if best_wr is not None else None,
+                    f"{best_wr['win_rate']*100:.0f}%" if best_wr is not None else None,
+                )
 
-        with cD:
-            metric_card(
-                "👥 Most Active",
-                most_active["display_name"] if most_active is not None else None,
-                (
-                    f"{int(most_active['games_played'])} GP"
-                    if most_active is not None
-                    else None
-                ),
-            )
+            with cD:
+                metric_card(
+                    "👥 Most Active",
+                    most_active["display_name"] if most_active is not None else None,
+                    (
+                        f"{int(most_active['games_played'])} GP"
+                        if most_active is not None
+                        else None
+                    ),
+                )
 
             # ── Sexy Leaderboard: rank, medals, win% progress, streak flair ──
             lb_disp = lb.copy()
