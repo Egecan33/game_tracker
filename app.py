@@ -861,7 +861,7 @@ if mode == "General":
             )
 
             # ── Highlights strip ─────────────────────────────────────────────
-            champ = lb.iloc[0] if not lb.empty else None
+            champ = lb.loc[lb["elo"].idxmax()] if not lb.empty else None
             longest = lb.loc[lb["best_streak"].idxmax()] if not lb.empty else None
             eligible = lb[lb["games_played"] >= 3]
             best_wr = (
@@ -930,6 +930,7 @@ if mode == "General":
             lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
             lb_disp["🔥"] = np.where(lb_disp["current_streak"] >= 3, "🔥", "")
             lb_disp["Win%"] = lb_disp["win_rate"] * 100.0  # 0..100 for ProgressColumn
+            lb = lb.sort_values(by="elo", ascending=False).reset_index(drop=True)
 
             show_cols = [
                 "#",
