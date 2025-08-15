@@ -637,19 +637,81 @@ if mode == "General":
     st.title("🏆 Game Night Leaderboard")
 
     joined = sb_select_sessions_joined()
+    games_df = sb_select("games")  # for single-game info/BGG card
+
     if joined.empty:
         st.info("No session data yet. Add sessions from the Admin tab.")
     else:
         cfg = load_config()  # use admin settings
+
         c1, c2 = st.columns([2, 1])
         game_names = sorted(joined["game_name"].dropna().unique().tolist())
+
+        # Multiselect + quick actions
+        ms_key = "game_filter"
         selected_games = c1.multiselect(
-            "Filter by game", options=game_names, default=game_names
+            "Filter by game", options=game_names, default=game_names, key=ms_key
         )
+        bcol1, bcol2 = c1.columns(2)
+        if bcol1.button("All games", use_container_width=True):
+            st.session_state[ms_key] = game_names
+            st.rerun()
+        if bcol2.button("Clear", use_container_width=True):
+            st.session_state[ms_key] = []
+            st.rerun()
 
         min_date = joined["played_at"].min()
         max_date = joined["played_at"].max()
         start_date, end_date = c2.date_input("Date range", value=(min_date, max_date))
+
+        # If exactly one game is selected, show a polished info card (+ BGG link if provided)
+        if len(selected_games) == 1:
+            gname = selected_games[0]
+            grow = (
+                games_df.loc[games_df["name"] == gname].to_dict("records")[0]
+                if not games_df.empty and (games_df["name"] == gname).any()
+                else {}
+            )
+            bgg_slug = (grow.get("bgg_slug") or "").strip()
+            minp = grow.get("min_players", None)
+            maxp = grow.get("max_players", None)
+            notes = grow.get("notes", "")
+
+            # Stats for current filter range
+            filt = joined[
+                (joined["game_name"] == gname)
+                & (joined["played_at"].between(start_date, end_date))
+            ]
+            sessions_count = filt["session_id"].nunique()
+            unique_players = filt["player_id"].nunique()
+            avg_table = (
+                (filt.groupby("session_id")["player_id"].nunique().mean())
+                if not filt.empty
+                else np.nan
+            )
+
+            colA, colB = st.columns([3, 2])
+            with colA:
+                st.markdown(f"### 🎲 {gname}")
+                if minp or maxp:
+                    st.caption(
+                        f"Players: {int(minp) if pd.notna(minp) else '?'}–{int(maxp) if pd.notna(maxp) else '?'}"
+                    )
+                if notes:
+                    st.write(notes)
+                if bgg_slug:
+                    st.markdown(
+                        f"[View on BoardGameGeek](https://boardgamegeek.com/boardgame/{bgg_slug})"
+                    )
+            with colB:
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Sessions", sessions_count)
+                m2.metric("Unique players", unique_players)
+                m3.metric(
+                    "Avg table size",
+                    f"{avg_table:.1f}" if pd.notna(avg_table) else "—",
+                )
+            st.divider()
 
         lb, h2h, recent = compute_leaderboard(
             joined,
@@ -689,27 +751,36 @@ if mode == "General":
                 last_play.strftime("%Y-%m-%d") if pd.notna(last_play) else "—",
             )
 
-            st.subheader("Leaderboard")
+            # ── Sexy Leaderboard: rank, medals, win% progress, streak flair ──
+            lb_disp = lb.copy()
+            lb_disp.insert(0, "#", np.arange(1, len(lb_disp) + 1))
+            medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+            lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
+
+            # streak flair
+            lb_disp["🔥"] = np.where(lb_disp["current_streak"] >= 3, "🔥", "")
+
+            # keep only the columns we show
             show_cols = [
+                "#",
+                "🏅",
                 "player_name",
-                "games_played",
+                "elo",
                 "wins",
+                "games_played",
                 "win_rate",
                 "avg_position",
                 "avg_points",
                 "current_streak",
                 "best_streak",
-                "elo",
                 "last_played",
+                "🔥",
             ]
-            fmt = {
-                "win_rate": "{:.0%}",
-                "avg_position": "{:.2f}",
-                "avg_points": "{:.2f}",
-                "elo": "{:.0f}",
-            }
+
+            # Column configs: progress bar for Win%, number formatting, widths
+            st.subheader("Leaderboard")
             st.dataframe(
-                lb[show_cols].rename(
+                lb_disp[show_cols].rename(
                     columns={
                         "player_name": "Player",
                         "games_played": "GP",
@@ -725,14 +796,39 @@ if mode == "General":
                 ),
                 use_container_width=True,
                 hide_index=True,
-                column_config={k: {"format": v} for k, v in fmt.items()},
+                column_config={
+                    "#": st.column_config.NumberColumn(width="small"),
+                    "🏅": st.column_config.TextColumn(width="small", help="Top 3"),
+                    "Player": st.column_config.TextColumn(width="large"),
+                    "ELO": st.column_config.NumberColumn(
+                        format="%.0f", help="Higher is better"
+                    ),
+                    "W": st.column_config.NumberColumn(width="small"),
+                    "GP": st.column_config.NumberColumn(width="small"),
+                    "Win%": st.column_config.ProgressColumn(
+                        "Win%",
+                        help="Wins / Games Played",
+                        format="%.0f%%",
+                        min_value=0.0,
+                        max_value=1.0,
+                    ),
+                    "Avg Pos": st.column_config.NumberColumn(format="%.2f"),
+                    "Avg Pts": st.column_config.NumberColumn(format="%.2f"),
+                    "Streak": st.column_config.NumberColumn(
+                        width="small", help="Current winning streak"
+                    ),
+                    "Best Streak": st.column_config.NumberColumn(width="small"),
+                    "Last": st.column_config.DateColumn(format="YYYY-MM-DD"),
+                    "🔥": st.column_config.TextColumn(
+                        width="small", help="Hot streak (3+ wins)"
+                    ),
+                },
             )
 
             st.subheader("Head-to-Head (times row finished ahead of column)")
             st.dataframe(h2h, use_container_width=True)
 
             st.subheader("Recent Sessions")
-            # Rename only columns that exist
             rename_map = {
                 "played_at": "Date",
                 "game_name": "Game",
@@ -740,11 +836,6 @@ if mode == "General":
                 "notes": "Notes",
                 "winners": "Winners",
             }
-            rcols = [
-                c
-                for c in ["Date", "Game", "Location", "Notes", "Winners"]
-                if c in [rename_map.get(rc, rc) for rc in recent.columns]
-            ]
             st.dataframe(
                 recent.rename(columns=rename_map),
                 use_container_width=True,
