@@ -1,6 +1,7 @@
 streamlit>=1.36
-supabase>=2.5.0
+supabase>=2.5,<3
 python-dotenv>=1.0.1
-pandas>=2.2.2
-numpy>=1.26.4
+pandas>=2.2
+numpy>=1.26
+plotly>=5.18
 python-dateutil>=2.9.0.post0

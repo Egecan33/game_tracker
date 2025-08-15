@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
+import plotly.graph_objects as go  # for H2H heatmap
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Environment & Supabase
@@ -186,7 +187,14 @@ def sb_select_sessions_joined() -> pd.DataFrame:
             suffixes=("", "_s"),
         )
         .merge(
-            players.rename(columns={"id": "player_id_", "name": "player_name"}),
+            # include nickname for display
+            players.rename(
+                columns={
+                    "id": "player_id_",
+                    "name": "player_name",
+                    "nickname": "player_nick",
+                }
+            ),
             left_on="player_id",
             right_on="player_id_",
             how="left",
@@ -215,6 +223,8 @@ def sb_select_sessions_joined() -> pd.DataFrame:
         joined["is_winner"] = joined["is_winner"].fillna(False).astype(bool)
     if "team" in joined.columns:
         joined["team"] = joined["team"].fillna("").astype(str).str.strip().str.upper()
+    if "player_nick" in joined.columns:
+        joined["player_nick"] = joined["player_nick"].fillna("").astype(str)
 
     return joined
 
@@ -356,6 +366,18 @@ def compute_leaderboard(
         .reset_index()
     )
     gp["win_rate"] = (gp["wins"] / gp["games_played"]).fillna(0.0)
+
+    # Add nickname + display name
+    if "player_nick" in df.columns:
+        nick_map = df.groupby("player_id")["player_nick"].first()
+        gp["player_nick"] = gp["player_id"].map(nick_map).fillna("")
+    else:
+        gp["player_nick"] = ""
+    gp["display_name"] = np.where(
+        gp["player_nick"].str.strip() != "",
+        gp["player_name"].astype(str) + " (" + gp["player_nick"].astype(str) + ")",
+        gp["player_name"].astype(str),
+    )
 
     # ELO calculations
     ratings: Dict[str, float] = {
@@ -563,7 +585,7 @@ def compute_leaderboard(
         ["wins", "win_rate", "elo"], ascending=[False, False, False]
     ).reset_index(drop=True)
 
-    # Head-to-Head
+    # Head-to-Head (times row finished ahead of column)
     ids = lb["player_id"].tolist()
     idx = {pid: i for i, pid in enumerate(ids)}
     h2h = np.zeros((len(ids), len(ids)), dtype=int)
@@ -587,7 +609,7 @@ def compute_leaderboard(
                         h2h[idx[a["player_id"]], idx[b["player_id"]]] += 1
 
     h2h_df = pd.DataFrame(
-        h2h, index=lb["player_name"], columns=lb["player_name"]
+        h2h, index=lb["display_name"], columns=lb["display_name"]
     ).astype(int)
 
     # Recent sessions (safe column selection)
@@ -614,6 +636,64 @@ def compute_leaderboard(
     )
 
     return lb, h2h_df, recent_slim
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Plot helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def render_h2h_heatmap(h2h_df: pd.DataFrame, title: str = "Head-to-Head") -> None:
+    """Render a Plotly heatmap with numbers in each cell; diagonal blank."""
+    if h2h_df.empty:
+        st.info("No head-to-head data for current filters.")
+        return
+
+    # Mask diagonal for nicer look
+    z = h2h_df.values.astype(float)
+    text = h2h_df.astype(str).values
+    for i in range(len(h2h_df)):
+        z[i, i] = np.nan
+        text[i, i] = ""
+
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=z,
+            x=h2h_df.columns.tolist(),
+            y=h2h_df.index.tolist(),
+            colorscale="Blues",
+            reversescale=False,
+            colorbar=dict(title="Wins"),
+            hovertemplate="<b>%{y}</b> finished ahead of <b>%{x}</b>: %{z}<extra></extra>",
+            zmin=0,
+        )
+    )
+
+    # Add numbers as annotations
+    annotations = []
+    for i, row in enumerate(text):
+        for j, val in enumerate(row):
+            if val != "":
+                annotations.append(
+                    go.layout.Annotation(
+                        text=val,
+                        x=h2h_df.columns[j],
+                        y=h2h_df.index[i],
+                        xref="x",
+                        yref="y",
+                        showarrow=False,
+                        font=dict(color="black"),
+                    )
+                )
+    fig.update_layout(
+        title=title,
+        annotations=annotations,
+        xaxis=dict(title="", side="top", tickangle=45),
+        yaxis=dict(title="", autorange="reversed"),
+        margin=dict(l=0, r=0, t=60, b=0),
+        height=400 + 20 * len(h2h_df),
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -645,8 +725,6 @@ if mode == "General":
         cfg = load_config()  # use admin settings
 
         # ---- Filters (General) ----
-        cfg = load_config()  # keep this where it already is
-
         c1, c2 = st.columns([2, 1])
         game_names = sorted(joined["game_name"].dropna().unique().tolist())
 
@@ -662,15 +740,17 @@ if mode == "General":
             key=ms_key,
         )
 
-        # Quick actions — update state via callbacks (no manual st.rerun needed)
+        # Quick actions — update state via callbacks
         bcol1, bcol2 = c1.columns(2)
         bcol1.button(
             "All games",
+            key="btn_all_games",
             use_container_width=True,
             on_click=lambda: st.session_state.update({ms_key: game_names[:]}),
         )
         bcol2.button(
             "Clear",
+            key="btn_clear_games",
             use_container_width=True,
             on_click=lambda: st.session_state.update({ms_key: []}),
         )
@@ -766,24 +846,71 @@ if mode == "General":
                 last_play.strftime("%Y-%m-%d") if pd.notna(last_play) else "—",
             )
 
+            # ── Highlights strip ─────────────────────────────────────────────
+            champ = lb.loc[lb["elo"].idxmax()] if not lb.empty else None
+            longest = lb.loc[lb["best_streak"].idxmax()] if not lb.empty else None
+            eligible = lb[lb["games_played"] >= 3]
+            best_wr = (
+                eligible.loc[eligible["win_rate"].idxmax()]
+                if not eligible.empty
+                else None
+            )
+            most_active = lb.loc[lb["games_played"].idxmax()] if not lb.empty else None
+
+            cA, cB, cC, cD = st.columns(4)
+            with cA:
+                st.metric(
+                    "🏆 Champion",
+                    (champ["display_name"] if champ is not None else "—"),
+                    delta=f'ELO {int(champ["elo"])}' if champ is not None else None,
+                )
+            with cB:
+                st.metric(
+                    "🔥 Longest Streak",
+                    (longest["display_name"] if longest is not None else "—"),
+                    delta=(
+                        f'{int(longest["best_streak"])} wins'
+                        if longest is not None
+                        else None
+                    ),
+                )
+            with cC:
+                st.metric(
+                    "🎯 Best Win% (≥3 GP)",
+                    (best_wr["display_name"] if best_wr is not None else "—"),
+                    delta=(
+                        f'{best_wr["win_rate"]*100:.0f}%'
+                        if best_wr is not None
+                        else None
+                    ),
+                )
+            with cD:
+                st.metric(
+                    "👥 Most Active",
+                    (most_active["display_name"] if most_active is not None else "—"),
+                    delta=(
+                        f'{int(most_active["games_played"])} GP'
+                        if most_active is not None
+                        else None
+                    ),
+                )
+
             # ── Sexy Leaderboard: rank, medals, win% progress, streak flair ──
             lb_disp = lb.copy()
             lb_disp.insert(0, "#", np.arange(1, len(lb_disp) + 1))
             medals = {1: "🥇", 2: "🥈", 3: "🥉"}
             lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
-
-            # streak flair
             lb_disp["🔥"] = np.where(lb_disp["current_streak"] >= 3, "🔥", "")
+            lb_disp["Win%"] = lb_disp["win_rate"] * 100.0  # 0..100 for ProgressColumn
 
-            # keep only the columns we show
             show_cols = [
                 "#",
                 "🏅",
-                "player_name",
+                "display_name",
                 "elo",
                 "wins",
                 "games_played",
-                "win_rate",
+                "Win%",
                 "avg_position",
                 "avg_points",
                 "current_streak",
@@ -792,15 +919,13 @@ if mode == "General":
                 "🔥",
             ]
 
-            # Column configs: progress bar for Win%, number formatting, widths
             st.subheader("Leaderboard")
             st.dataframe(
                 lb_disp[show_cols].rename(
                     columns={
-                        "player_name": "Player",
+                        "display_name": "Player",
                         "games_played": "GP",
                         "wins": "W",
-                        "win_rate": "Win%",
                         "avg_position": "Avg Pos",
                         "avg_points": "Avg Pts",
                         "current_streak": "Streak",
@@ -825,7 +950,7 @@ if mode == "General":
                         help="Wins / Games Played",
                         format="%.0f%%",
                         min_value=0.0,
-                        max_value=1.0,
+                        max_value=100.0,
                     ),
                     "Avg Pos": st.column_config.NumberColumn(format="%.2f"),
                     "Avg Pts": st.column_config.NumberColumn(format="%.2f"),
@@ -841,7 +966,7 @@ if mode == "General":
             )
 
             st.subheader("Head-to-Head (times row finished ahead of column)")
-            st.dataframe(h2h, use_container_width=True)
+            render_h2h_heatmap(h2h, title="Head-to-Head (row finished ahead of column)")
 
             st.subheader("Recent Sessions")
             rename_map = {
