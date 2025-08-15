@@ -644,20 +644,36 @@ if mode == "General":
     else:
         cfg = load_config()  # use admin settings
 
+        # ---- Filters (General) ----
+        cfg = load_config()  # keep this where it already is
+
         c1, c2 = st.columns([2, 1])
         game_names = sorted(joined["game_name"].dropna().unique().tolist())
 
-        # Multiselect + quick actions
+        # Use a stable key + initialize session state BEFORE creating the widget
         ms_key = "game_filter"
-        selected_games = c1.multiselect(
-            "Filter by game", options=game_names, default=game_names, key=ms_key
-        )
-        bcol1, bcol2 = c1.columns(2)
-        if bcol1.button("All games", use_container_width=True):
-            st.session_state[ms_key] = game_names
+        if ms_key not in st.session_state:
+            st.session_state[ms_key] = game_names[:]  # start with all games selected
 
-        if bcol2.button("Clear", use_container_width=True):
-            st.session_state[ms_key] = []
+        # Multiselect bound to session_state; no `default` needed when `key` is used
+        selected_games = c1.multiselect(
+            "Filter by game",
+            options=game_names,
+            key=ms_key,
+        )
+
+        # Quick actions — update state via callbacks (no manual st.rerun needed)
+        bcol1, bcol2 = c1.columns(2)
+        bcol1.button(
+            "All games",
+            use_container_width=True,
+            on_click=lambda: st.session_state.update({ms_key: game_names[:]}),
+        )
+        bcol2.button(
+            "Clear",
+            use_container_width=True,
+            on_click=lambda: st.session_state.update({ms_key: []}),
+        )
 
         min_date = joined["played_at"].min()
         max_date = joined["played_at"].max()
