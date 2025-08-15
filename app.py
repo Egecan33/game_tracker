@@ -372,6 +372,10 @@ def compute_leaderboard(
             return EMPTY
         df = df[df["game_name"].isin(game_filter)]
 
+    # Ensure 'played_at' is a datetime column
+    if "played_at" in df.columns:
+        df["played_at"] = pd.to_datetime(df["played_at"], errors="coerce")
+
     if date_range and all(date_range):
         start, end = date_range
         df = df[(df["played_at"] >= start) & (df["played_at"] <= end)]
