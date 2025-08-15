@@ -847,7 +847,7 @@ if mode == "General":
             )
 
             # ── Highlights strip ─────────────────────────────────────────────
-            champ = lb.loc[lb["elo"].idxmax()] if not lb.empty else None
+            champ = lb.iloc[0] if not lb.empty else None
             longest = lb.loc[lb["best_streak"].idxmax()] if not lb.empty else None
             eligible = lb[lb["games_played"] >= 3]
             best_wr = (
