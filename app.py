@@ -1595,15 +1595,19 @@ def render_daily_game():
     with c_head:
         colA, colB, colC = st.columns([2, 1, 1])
 
-        # ⬇️ use only the styled header (delete the earlier unstyled colA.subheader line)
         eq = _equipped_for_player(pid)
         scope = f"pfont-{pid}"
         _inject_font_css(eq.get("font"), scope)
-        colA.subheader(
-            f"<span class='{scope}'>Hi, {players_df.set_index('id').loc[pid, 'name']}!</span>",
+
+        # safer name lookup (no KeyError if something is off)
+        name_map = players_df.set_index("id")["name"] if not players_df.empty else {}
+        pname = (name_map.get(pid) if hasattr(name_map, "get") else None) or "Player"
+
+        # use markdown with HTML + class for the font
+        colA.markdown(
+            f"<h3 class='{scope}' style='margin:0;'>Hi, {pname}!</h3>",
             unsafe_allow_html=True,
         )
-
         colB.metric("Best today", best_today)
         colC.metric("Resets (UTC)", f"{DAY_ROLLOVER_HOUR_UTC:02d}:00")
 
@@ -1998,6 +2002,7 @@ if mode == "General":
                 options=game_names,
                 key=ms_key,
             )
+            no_games_selected = len(selected_games) == 0
 
             # Quick actions — update state via callbacks
             bcol1, bcol2 = c1.columns(2)
@@ -2201,7 +2206,10 @@ if mode == "General":
                 )
 
             if lb.empty:
-                st.info("No data for current filters.")
+                if no_games_selected:
+                    st.info("No games selected. Pick one or click **All games**.")
+                else:
+                    st.info("No data for current filters.")
             else:
                 # KPI
                 k1, k2, k3, k4 = st.columns(4)
