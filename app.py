@@ -3498,3 +3498,48 @@ if mode == "Admin":
                         if sb_delete_by_id("session_requests", rid):
                             st.warning("Request deleted.")
                             st.cache_data.clear()
+
+    # ------------------------- Economy / Bag Management -------------------------
+
+    with tabs[6]:
+        st.subheader("Economy (drops, crafting, fonts)")
+        st.caption("Edit JSON and save. Safe defaults are used if JSON is invalid.")
+
+        import json
+
+        def _json_area(label, obj, key):
+            raw = st.text_area(
+                label, value=json.dumps(obj, indent=2), height=260, key=key
+            )
+            try:
+                parsed = json.loads(raw)
+                ok = True
+            except Exception as e:
+                st.error(f"{label}: invalid JSON → {e}")
+                parsed, ok = obj, False
+            return parsed, ok
+
+        cur_item_db, ok1 = _json_area("ITEM_DB", ITEM_DB, "econ_items")
+        cur_box_tables, ok2 = _json_area("BOX_TABLES", BOX_TABLES, "econ_boxes")
+        cur_craft, ok3 = _json_area("CRAFT_RECIPES", CRAFT_RECIPES, "econ_craft")
+        cur_fonts, ok4 = _json_area("FONT_CATALOG", FONT_CATALOG, "econ_fonts")
+
+        colA, colB = st.columns([1, 1])
+        if colA.button(
+            "Save all (to config)",
+            type="primary",
+            disabled=not (ok1 and ok2 and ok3 and ok4),
+        ):
+            all_ok = True
+            all_ok &= _save_json_config("economy_item_db", cur_item_db)
+            all_ok &= _save_json_config("economy_box_tables", cur_box_tables)
+            all_ok &= _save_json_config("economy_craft_recipes", cur_craft)
+            all_ok &= _save_json_config("economy_font_catalog", cur_fonts)
+            if all_ok:
+                st.success("Saved. Reload app to take effect.")
+        if colB.button("Revert to built-in defaults", type="secondary"):
+            _save_json_config("economy_item_db", ITEM_DB)
+            _save_json_config("economy_box_tables", BOX_TABLES)
+            _save_json_config("economy_craft_recipes", CRAFT_RECIPES)
+            _save_json_config("economy_font_catalog", FONT_CATALOG)
+            st.warning("Defaults written to config  . Reload app to apply.")
