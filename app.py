@@ -392,76 +392,64 @@ def _set_awarded_flag_safe(puzzle_id: str, value: bool = True) -> None:
         pass
 
 
-def ensure_today_puzzle(games_df: pd.DataFrame) -> Tuple[str, str, date]:
+def ensure_today_puzzle(games_df):
     """
-    Return (puzzle_id, answer_game_id, puzzle_date).
-    - Works with either daily_puzzles.{puzzle_date|date_key} and {game_id|answer_game_id}
-    - Safe under concurrency (409 conflicts): re-reads after insert failure.
+    Minimal version:
+      - uses daily_puzzles(puzzle_date, game_id)
+      - DB generates id/created_at
+      - safe against duplicate inserts
     """
     if games_df.empty:
-        raise RuntimeError("No games available to choose a daily puzzle from.")
+        raise RuntimeError("No games available.")
     if not supabase:
         raise RuntimeError("Supabase client not initialized.")
 
+    # obey 03:00 UTC rollover you already use
     _, _, pday = _window()
     day_str = pday.isoformat()
-    date_col, game_col = _daily_puzzles_cols()
 
-    # 1) Already there?
-    try:
-        existing = (
-            supabase.table("daily_puzzles")
-            .select(f"id,{game_col},{date_col}")
-            .eq(date_col, day_str)
-            .limit(1)
-            .execute()
-            .data
-            or []
-        )
-    except Exception:
-        st.error(
-            f"Could not read `daily_puzzles` (does it exist, does anon have SELECT, and is column `{date_col}` correct?)."
-        )
-        raise
+    # already there?
+    r = (
+        supabase.table("daily_puzzles")
+        .select("id,game_id,puzzle_date")
+        .eq("puzzle_date", day_str)
+        .limit(1)
+        .execute()
+        .data
+        or []
+    )
+    if r:
+        row = r[0]
+        return row["id"], row["game_id"], pday
 
-    if existing:
-        row = existing[0]
-        return row["id"], row[game_col], pday
-
-    # 2) Choose deterministic answer and insert (handle conflicts gracefully)
+    # pick deterministic answer
     ids = games_df["id"].tolist()
     idx = int(hashlib.md5(day_str.encode()).hexdigest(), 16) % len(ids)
     gid = ids[idx]
-    new_id = _uuid()
 
-    payload = {"id": new_id, date_col: day_str, game_col: gid}
-
+    # try insert with just the two columns
     try:
-        supabase.table("daily_puzzles").insert(payload).execute()
-        return new_id, gid, pday
+        supabase.table("daily_puzzles").insert(
+            {"puzzle_date": day_str, "game_id": gid}
+        ).execute()
     except Exception:
-        # If it was a 409 unique violation race, the row exists now — re-read once.
-        try:
-            row2 = (
-                supabase.table("daily_puzzles")
-                .select(f"id,{game_col},{date_col}")
-                .eq(date_col, day_str)
-                .limit(1)
-                .execute()
-                .data
-                or []
-            )
-            if row2:
-                r = row2[0]
-                return r["id"], r[game_col], pday
-        except Exception:
-            pass
+        # could be unique race; just fall through to re-read
+        pass
 
-        st.error(
-            "Could not insert into `daily_puzzles` "
-            "(permission, column mismatch, or constraint issue)."
-        )
-        raise
+    # read back (works whether insert returned a body or not)
+    r2 = (
+        supabase.table("daily_puzzles")
+        .select("id,game_id,puzzle_date")
+        .eq("puzzle_date", day_str)
+        .limit(1)
+        .execute()
+        .data
+        or []
+    )
+    if not r2:
+        raise RuntimeError("Could not create or read today's daily_puzzles row.")
+    row = r2[0]
+    return row["id"], row["game_id"], pday
 
 
 def get_or_create_run(puzzle_id: str, player_id: str) -> Dict[str, Any]:
@@ -497,10 +485,9 @@ def record_guess(
         return run, 0, False  # locked
     rid = run["id"]
     prev = (
-        supabase.table("daily_attempts")
-        .select("attempt_no")
-        .eq("run_id", rid)
-        .order("attempt_no", desc=True)
+        supabase.table("daily_puzzles")
+        .select("id,game_id,puzzle_date")
+        .eq("puzzle_date", str(y_date))
         .limit(1)
         .execute()
         .data
@@ -1807,8 +1794,8 @@ if mode == "General":
         date_col, game_col = _daily_puzzles_cols()
         prev = (
             supabase.table("daily_puzzles")
-            .select(f"id,{game_col},{date_col}")
-            .eq(date_col, str(y_date))
+            .select("id,game_id,puzzle_date")
+            .eq("puzzle_date", str(y_date))
             .limit(1)
             .execute()
             .data
