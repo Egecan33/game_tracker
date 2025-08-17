@@ -482,19 +482,36 @@ def record_guess(
 ) -> Tuple[Dict[str, Any], int, bool]:
     """Insert attempt if not solved. Returns (updated_run, attempt_no, is_correct)."""
     if run.get("solved_at"):
-        return run, 0, False  # locked
+        return run, 0, False  # already locked
+
     rid = run["id"]
-    prev = (
-        supabase.table("daily_puzzles")
-        .select("id,game_id,puzzle_date")
-        .eq("puzzle_date", str(y_date))
-        .limit(1)
+
+    # Find the next attempt number for THIS run
+    # (robust: works whether attempt_no exists on some rows or not)
+    existing = (
+        supabase.table("daily_attempts")
+        .select("attempt_no")
+        .eq("run_id", rid)
+        .order("attempt_no", desc=True)
         .execute()
         .data
         or []
     )
-    next_no = (prev[0]["attempt_no"] + 1) if prev else 1
+    if existing and existing[0].get("attempt_no") is not None:
+        next_no = int(existing[0]["attempt_no"]) + 1
+    else:
+        # fallback: count rows if attempt_no isn't populated
+        cnt = (
+            supabase.table("daily_attempts")
+            .select("id")
+            .eq("run_id", rid)
+            .execute()
+            .data
+        )
+        next_no = (len(cnt) if cnt else 0) + 1
+
     correct = guess_game_id == answer_game_id
+
     supabase.table("daily_attempts").insert(
         {
             "id": _uuid(),
@@ -504,10 +521,12 @@ def record_guess(
             "is_correct": correct,
         }
     ).execute()
+
     if correct:
         now = _utc_now().isoformat()
         supabase.table("daily_runs").update({"solved_at": now}).eq("id", rid).execute()
         run["solved_at"] = now
+
     return run, next_no, correct
 
 
@@ -1794,8 +1813,8 @@ if mode == "General":
         date_col, game_col = _daily_puzzles_cols()
         prev = (
             supabase.table("daily_puzzles")
-            .select("id,game_id,puzzle_date")
-            .eq("puzzle_date", str(y_date))
+            .select(f"id,{game_col},{date_col}")
+            .eq(date_col, str(y_date))
             .limit(1)
             .execute()
             .data
