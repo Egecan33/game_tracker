@@ -1330,8 +1330,12 @@ def compute_leaderboard(
     if not gp.empty:
         vals = [_streaks(pid) for pid in gp["player_id"].tolist()]
         # vals length == len(gp)
-        gp.loc[:, "current_streak"] = pd.Series([a for a, _ in vals], index=gp.index).astype(int)
-        gp.loc[:, "best_streak"]   = pd.Series([b for _, b in vals], index=gp.index).astype(int)
+        gp.loc[:, "current_streak"] = pd.Series(
+            [a for a, _ in vals], index=gp.index
+        ).astype(int)
+        gp.loc[:, "best_streak"] = pd.Series(
+            [b for _, b in vals], index=gp.index
+        ).astype(int)
 
     # --- new (always create the columns) ---
     gp["current_streak"] = 0
@@ -2124,13 +2128,21 @@ if mode == "General":
             lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
 
             # ensure columns exist even if upstream logic changes
-            for col, default in [("current_streak", 0), ("best_streak", 0), ("win_rate", 0.0), ("display_name", "")]:
+            for col, default in [
+                ("current_streak", 0),
+                ("best_streak", 0),
+                ("win_rate", 0.0),
+                ("display_name", ""),
+            ]:
                 if col not in lb_disp.columns:
                     lb_disp[col] = default
 
-            lb_disp["🔥"] = np.where(lb_disp["current_streak"].fillna(0).astype(int) >= 3, "🔥", "")
-            lb_disp["Win%"] = (lb_disp["win_rate"].fillna(0) * 100.0)
-            lb_disp["Player"] = lb_disp["player_id"].map(styled_by_pid).fillna(lb_disp["display_name"])
+            lb_disp["🔥"] = np.where(
+                lb_disp["current_streak"].fillna(0).astype(int) >= 3, "🔥", ""
+            )
+            lb_disp["Win%"] = lb_disp["win_rate"].fillna(0) * 100.0
+            lb_disp["Player"] = (
+                lb_disp["player_id"].map(styled_by_pid).fillna(lb_disp["display_name"])
             )
 
             # 1a) (Optional) Compact roster preview with real fonts (top 12)
@@ -2283,13 +2295,25 @@ if mode == "General":
                     )
 
                 # ── Sexy Leaderboard: rank, medals, win% progress, streak flair ──
-                lb_disp = lb.copy()  # lb is already ELO-sorted from compute_leaderboard
+                lb_disp = lb.copy()  # lb already ELO-sorted
                 lb_disp.insert(0, "#", np.arange(1, len(lb_disp) + 1))
                 medals = {1: "🥇", 2: "🥈", 3: "🥉"}
                 lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
-                lb_disp["🔥"] = np.where(lb_disp["current_streak"] >= 3, "🔥", "")
-                lb_disp["Win%"] = lb_disp["win_rate"] * 100.0
 
+                # safety: guarantee columns for UI
+                for col, default in [
+                    ("current_streak", 0),
+                    ("best_streak", 0),
+                    ("win_rate", 0.0),
+                    ("display_name", ""),
+                ]:
+                    if col not in lb_disp.columns:
+                        lb_disp[col] = default
+
+                lb_disp["🔥"] = np.where(
+                    lb_disp["current_streak"].fillna(0).astype(int) >= 3, "🔥", ""
+                )
+                lb_disp["Win%"] = lb_disp["win_rate"].fillna(0) * 100.0
                 lb_disp["Player"] = (
                     lb_disp["player_id"]
                     .map(styled_by_pid)
