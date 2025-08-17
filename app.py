@@ -295,197 +295,6 @@ def _as_dict(x):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# NEW: generic upsert
-# ─────────────────────────────────────────────────────────────────────────────
-
-
-def sb_upsert(table: str, data: Dict[str, Any]) -> bool:
-    if not supabase:
-        st.error("Supabase not configured.")
-        return False
-    try:
-        supabase.table(table).upsert(data).execute()
-        return True
-    except Exception as e:
-        st.error(f"Upsert into {table} failed: {e}")
-        return False
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# NEW: BoardGamDLE helpers
-# ─────────────────────────────────────────────────────────────────────────────
-import hashlib
-import random
-
-UTC_CUTOFF_HOUR = 3  # 03:00+00:00
-
-
-def daily_key_utc(now: Optional[pd.Timestamp] = None) -> str:
-    """Return day key obeying the 03:00+00:00 rollover in UTC."""
-    now = now or pd.Timestamp.utcnow()
-    if now.hour < UTC_CUTOFF_HOUR:
-        key = (now - pd.Timedelta(days=1)).date()
-    else:
-        key = now.date()
-    return str(key)
-
-
-def prev_daily_key_utc(now: Optional[pd.Timestamp] = None) -> str:
-    today_key = pd.to_datetime(daily_key_utc(now)).date()
-    return str(today_key - pd.Timedelta(days=1))
-
-
-def sha256_hex(s: str) -> str:
-    return hashlib.sha256(s.encode("utf-8")).hexdigest()
-
-
-def check_pin(player_id: str, pin: str) -> bool:
-    if not supabase:
-        return False
-    try:
-        res = (
-            supabase.table("player_auth")
-            .select("*")
-            .eq("player_id", player_id)
-            .execute()
-        )
-        rows = res.data or []
-        if not rows:
-            return False
-        return rows[0]["pin_hash"] == sha256_hex(pin)
-    except Exception:
-        return False
-
-
-def set_pin(player_id: str, pin: str) -> bool:
-    return sb_upsert(
-        "player_auth", {"player_id": player_id, "pin_hash": sha256_hex(pin)}
-    )
-
-
-def ensure_daily_game_exists(date_key: str, games_df: pd.DataFrame) -> Optional[str]:
-    """Return game_id of the daily answer, creating a stable choice if missing."""
-    if not supabase or games_df.empty:
-        return None
-    try:
-        # already chosen?
-        row = (
-            supabase.table("daily_game")
-            .select("*")
-            .eq("date_key", date_key)
-            .execute()
-            .data
-        )
-        if row:
-            return row[0]["game_id"]
-        # pick deterministically by hashing the day key (so it's stable even on cold start)
-        ids = games_df["id"].tolist()
-        idx = int(hashlib.md5(date_key.encode()).hexdigest(), 16) % len(ids)
-        game_id = ids[idx]
-        supabase.table("daily_game").insert(
-            {"date_key": date_key, "game_id": game_id}
-        ).execute()
-        return game_id
-    except Exception as e:
-        st.error(f"Failed to ensure daily game: {e}")
-        return None
-
-
-def award_yesterday_if_needed() -> None:
-    """Idempotent: compute yesterday's podium and create elo_bonus rows if not awarded."""
-    if not supabase:
-        return
-    ykey = prev_daily_key_utc()
-    try:
-        drow = (
-            supabase.table("daily_game").select("*").eq("date_key", ykey).execute().data
-        )
-        if not drow or (drow[0].get("awarded") is True):
-            return  # nothing to do
-        # compute solved attempts for yesterday
-        att = (
-            supabase.table("loldle_attempts")
-            .select("*")
-            .eq("date_key", ykey)
-            .order("created_at")
-            .execute()
-            .data
-            or []
-        )
-        if not att:
-            # set awarded even if nobody played (as a guard)
-            supabase.table("daily_game").update({"awarded": True}).eq(
-                "date_key", ykey
-            ).execute()
-            return
-        # Build per-player summary: first attempt time and first correct attempt time
-        by_player: Dict[str, Dict[str, Any]] = {}
-        for r in att:
-            pid = r["player_id"]
-            if pid not in by_player:
-                by_player[pid] = {
-                    "first_ts": pd.to_datetime(r["created_at"]),
-                    "solved_ts": None,
-                    "solved_attempt": None,
-                }
-            if r["is_correct"] and by_player[pid]["solved_ts"] is None:
-                by_player[pid]["solved_ts"] = pd.to_datetime(r["created_at"])
-                by_player[pid]["solved_attempt"] = int(r["attempt_no"])
-        # Keep only solvers
-        solved = [
-            (pid, v["solved_attempt"], (v["solved_ts"] - v["first_ts"]).total_seconds())
-            for pid, v in by_player.items()
-            if v["solved_ts"] is not None
-        ]
-        solved.sort(key=lambda x: (x[1], x[2]))  # attempts asc, then elapsed asc
-
-        n = len(solved)
-        if n == 0:
-            # nobody solved; award = none
-            supabase.table("daily_game").update({"awarded": True}).eq(
-                "date_key", ykey
-            ).execute()
-            return
-
-        # Determine podium points
-        awards: List[Tuple[str, float]] = []
-        if n == 1:
-            awards = [(solved[0][0], 1.0)]
-        elif n == 2:
-            awards = [(solved[0][0], 2.0), (solved[1][0], 1.0)]
-        else:
-            awards = [(solved[0][0], 4.0), (solved[1][0], 2.0), (solved[2][0], 1.0)]
-
-        # Insert elo_bonus rows if not already inserted for that day_key
-        existing = (
-            supabase.table("elo_bonus")
-            .select("player_id,points")
-            .eq("date_key", ykey)
-            .execute()
-            .data
-            or []
-        )
-        if not existing:
-            payload = [
-                {
-                    "id": _uuid(),
-                    "player_id": pid,
-                    "points": pts,
-                    "reason": f"BoardGamDLE podium {ykey}",
-                    "date_key": ykey,
-                }
-                for pid, pts in awards
-            ]
-            supabase.table("elo_bonus").insert(payload).execute()
-        supabase.table("daily_game").update({"awarded": True}).eq(
-            "date_key", ykey
-        ).execute()
-    except Exception as e:
-        # soft-fail: don't block page render
-        st.warning(f"Bonus award check failed: {e}")
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # Winner resolution
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -827,18 +636,6 @@ def compute_leaderboard(
                 }
             )
 
-    # NEW: add permanent BoardGamDLE bonuses
-    try:
-        bonus_df = sb_select("elo_bonus")
-        if not bonus_df.empty:
-            bonus_map = bonus_df.groupby("player_id")["points"].sum().to_dict()
-            gp["elo_bonus"] = gp["player_id"].map(bonus_map).fillna(0.0)
-            gp["elo"] = gp["elo"] + gp["elo_bonus"]
-        else:
-            gp["elo_bonus"] = 0.0
-    except Exception:
-        gp["elo_bonus"] = 0.0
-
     gp["elo"] = gp["player_id"].map(ratings)
 
     # Streaks
@@ -1024,588 +821,350 @@ with st.sidebar:
 
 if mode == "General":
     st.title("🏆 Game Night Leaderboard")
-    tabs_g = st.tabs(["Leaderboard", "BoardGamDLE"])  # NEW
 
-    with tabs_g[0]:
-        joined = sb_select_sessions_joined()
-        games_df = sb_select("games")  # for single-game info/BGG card
+    joined = sb_select_sessions_joined()
+    games_df = sb_select("games")  # for single-game info/BGG card
 
-        if joined.empty:
-            st.info("No session data yet. Add sessions from the Admin tab.")
-        else:
-            cfg = load_config()  # use admin settings
+    if joined.empty:
+        st.info("No session data yet. Add sessions from the Admin tab.")
+    else:
+        cfg = load_config()  # use admin settings
 
-            # ---- Filters (General) ----
-            c1, c2 = st.columns([2, 1])
-            game_names = sorted(joined["game_name"].dropna().unique().tolist())
+        # ---- Filters (General) ----
+        c1, c2 = st.columns([2, 1])
+        game_names = sorted(joined["game_name"].dropna().unique().tolist())
 
-            # Use a stable key + initialize session state BEFORE creating the widget
-            ms_key = "game_filter"
-            if ms_key not in st.session_state:
-                st.session_state[ms_key] = game_names[
-                    :
-                ]  # start with all games selected
+        # Use a stable key + initialize session state BEFORE creating the widget
+        ms_key = "game_filter"
+        if ms_key not in st.session_state:
+            st.session_state[ms_key] = game_names[:]  # start with all games selected
 
-            # Multiselect bound to session_state; no `default` needed when `key` is used
-            selected_games = c1.multiselect(
-                "Filter by game",
-                options=game_names,
-                key=ms_key,
+        # Multiselect bound to session_state; no `default` needed when `key` is used
+        selected_games = c1.multiselect(
+            "Filter by game",
+            options=game_names,
+            key=ms_key,
+        )
+
+        # Quick actions — update state via callbacks
+        bcol1, bcol2 = c1.columns(2)
+        bcol1.button(
+            "All games",
+            key="btn_all_games",
+            use_container_width=True,
+            on_click=lambda: st.session_state.update({ms_key: game_names[:]}),
+        )
+        bcol2.button(
+            "Clear",
+            key="btn_clear_games",
+            use_container_width=True,
+            on_click=lambda: st.session_state.update({ms_key: []}),
+        )
+
+        # Date range fallback: use today if no valid dates
+        min_date = joined["played_at"].dt.date.min()
+        max_date = joined["played_at"].dt.date.max()
+        if not min_date or not max_date or pd.isna(min_date) or pd.isna(max_date):
+            min_date = date.today()
+            max_date = date.today()
+        start_date, end_date = c2.date_input("Date range", value=(min_date, max_date))
+
+        # If exactly one game is selected, show a polished info card (+ BGG link if provided)
+        if len(selected_games) == 1:
+            gname = selected_games[0]
+            grow = (
+                games_df.loc[games_df["name"] == gname].to_dict("records")[0]
+                if not games_df.empty and (games_df["name"] == gname).any()
+                else {}
+            )
+            bgg_slug = (grow.get("bgg_slug") or "").strip()
+            minp = grow.get("min_players", None)
+            maxp = grow.get("max_players", None)
+            notes = grow.get("notes", "")
+
+            # Stats for current filter range
+            start_dt, end_dt = _range_to_df_tz(
+                joined["played_at"], start_date, end_date
+            )
+            filt = joined[
+                (joined["game_name"] == gname)
+                & (joined["played_at"].between(start_dt, end_dt))
+            ]
+            sessions_count = filt["session_id"].nunique()
+            unique_players = filt["player_id"].nunique()
+            avg_table = (
+                (filt.groupby("session_id")["player_id"].nunique().mean())
+                if not filt.empty
+                else np.nan
             )
 
-            # Quick actions — update state via callbacks
-            bcol1, bcol2 = c1.columns(2)
-            bcol1.button(
-                "All games",
-                key="btn_all_games",
-                use_container_width=True,
-                on_click=lambda: st.session_state.update({ms_key: game_names[:]}),
-            )
-            bcol2.button(
-                "Clear",
-                key="btn_clear_games",
-                use_container_width=True,
-                on_click=lambda: st.session_state.update({ms_key: []}),
-            )
-
-            # Date range fallback: use today if no valid dates
-            min_date = joined["played_at"].dt.date.min()
-            max_date = joined["played_at"].dt.date.max()
-            if not min_date or not max_date or pd.isna(min_date) or pd.isna(max_date):
-                min_date = date.today()
-                max_date = date.today()
-            start_date, end_date = c2.date_input(
-                "Date range", value=(min_date, max_date)
-            )
-
-            # If exactly one game is selected, show a polished info card (+ BGG link if provided)
-            if len(selected_games) == 1:
-                gname = selected_games[0]
-                grow = (
-                    games_df.loc[games_df["name"] == gname].to_dict("records")[0]
-                    if not games_df.empty and (games_df["name"] == gname).any()
-                    else {}
-                )
-                bgg_slug = (grow.get("bgg_slug") or "").strip()
-                minp = grow.get("min_players", None)
-                maxp = grow.get("max_players", None)
-                notes = grow.get("notes", "")
-
-                # Stats for current filter range
-                start_dt, end_dt = _range_to_df_tz(
-                    joined["played_at"], start_date, end_date
-                )
-                filt = joined[
-                    (joined["game_name"] == gname)
-                    & (joined["played_at"].between(start_dt, end_dt))
-                ]
-                sessions_count = filt["session_id"].nunique()
-                unique_players = filt["player_id"].nunique()
-                avg_table = (
-                    (filt.groupby("session_id")["player_id"].nunique().mean())
-                    if not filt.empty
-                    else np.nan
-                )
-
-                colA, colB = st.columns([3, 2])
-                with colA:
-                    st.markdown(f"### 🎲 {gname}")
-                    if minp or maxp:
-                        st.caption(
-                            f"Players: {int(minp) if pd.notna(minp) else '?'}–{int(maxp) if pd.notna(maxp) else '?'}"
-                        )
-                    if notes:
-                        st.write(notes)
-                    if bgg_slug:
-                        st.markdown(
-                            f"[View on BoardGameGeek](https://boardgamegeek.com/boardgame/{bgg_slug})"
-                        )
-                with colB:
-                    m1, m2, m3 = st.columns(3)
-                    m1.metric("Sessions", sessions_count)
-                    m2.metric("Unique players", unique_players)
-                    m3.metric(
-                        "Avg table size",
-                        f"{avg_table:.1f}" if pd.notna(avg_table) else "—",
+            colA, colB = st.columns([3, 2])
+            with colA:
+                st.markdown(f"### 🎲 {gname}")
+                if minp or maxp:
+                    st.caption(
+                        f"Players: {int(minp) if pd.notna(minp) else '?'}–{int(maxp) if pd.notna(maxp) else '?'}"
                     )
-                st.divider()
-
-            lb, h2h, recent, ratings_over_time = compute_leaderboard(
-                joined,
-                selected_games,
-                (start_date, end_date),
-                base_rating=float(cfg["starting_elo"]),
-                k_ffa_base=float(cfg["k_ffa_base"]),
-                k_team=float(cfg["k_team"]),
-                coop_drift=float(cfg["coop_drift"]),
-                solo_drift=float(cfg["solo_drift"]),
-                use_points_weight=bool(cfg["use_points_weight"]),
-                points_alpha=float(cfg["points_alpha"]),
-                gap_bonus=bool(cfg["gap_bonus"]),
-                gap_bonus_coeff=float(cfg["gap_bonus_coeff"]),
-                exceptional_bonus=bool(cfg["exceptional_bonus"]),
-                exceptional_threshold=float(cfg["exceptional_threshold"]),
-                exceptional_points=float(cfg["exceptional_points"]),
-            )
-
-            if lb.empty:
-                st.info("No data for current filters.")
-            else:
-                # KPI
-                k1, k2, k3, k4 = st.columns(4)
-                start_dt, end_dt = _range_to_df_tz(
-                    joined["played_at"], start_date, end_date
-                )
-                total_sessions = joined[
-                    (joined["game_name"].isin(selected_games))
-                    & (joined["played_at"].between(start_dt, end_dt))
-                ]["session_id"].nunique()
-                total_players = lb.shape[0]
-                total_games = len(selected_games)
-                last_play = joined["played_at"].max()
-                k1.metric("Sessions", total_sessions)
-                k2.metric("Players", total_players)
-                k3.metric("Games", total_games)
-                k4.metric(
-                    "Last played",
-                    last_play.strftime("%Y-%m-%d") if pd.notna(last_play) else "—",
-                )
-
-                # ── Highlights strip ─────────────────────────────────────────────
-                champ = lb.loc[lb["elo"].idxmax()] if not lb.empty else None
-                longest = lb.loc[lb["best_streak"].idxmax()] if not lb.empty else None
-                eligible = lb[lb["games_played"] >= 3]
-                best_wr = (
-                    eligible.loc[eligible["win_rate"].idxmax()]
-                    if not eligible.empty
-                    else None
-                )
-                most_active = (
-                    lb.loc[lb["games_played"].idxmax()] if not lb.empty else None
-                )
-
-                cA, cB, cC, cD = st.columns(4)
-
-                def metric_card(title, value, delta, color="green"):
-                    display_value = value if value else "—"
-                    display_delta = delta if delta else ""
+                if notes:
+                    st.write(notes)
+                if bgg_slug:
                     st.markdown(
-                        f"""
-                        <div style="text-align:center; padding:0.5em; border-radius:8px; background-color:rgba(240,240,240,0.5);">
-                            <div style="font-size:0.9em; font-weight:bold;">{title}</div>
-                            <div style="font-size:1.1em; white-space:normal; word-break:break-word;">{display_value}</div>
-                            <div style="color:{color}; font-size:0.85em;">{display_delta}</div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
+                        f"[View on BoardGameGeek](https://boardgamegeek.com/boardgame/{bgg_slug})"
                     )
+            with colB:
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Sessions", sessions_count)
+                m2.metric("Unique players", unique_players)
+                m3.metric(
+                    "Avg table size",
+                    f"{avg_table:.1f}" if pd.notna(avg_table) else "—",
+                )
+            st.divider()
 
-                with cA:
-                    metric_card(
-                        "🏆 Champion",
-                        champ["display_name"] if champ is not None else None,
-                        f"ELO {champ['elo']:.0f}" if champ is not None else None,
-                    )
+        lb, h2h, recent, ratings_over_time = compute_leaderboard(
+            joined,
+            selected_games,
+            (start_date, end_date),
+            base_rating=float(cfg["starting_elo"]),
+            k_ffa_base=float(cfg["k_ffa_base"]),
+            k_team=float(cfg["k_team"]),
+            coop_drift=float(cfg["coop_drift"]),
+            solo_drift=float(cfg["solo_drift"]),
+            use_points_weight=bool(cfg["use_points_weight"]),
+            points_alpha=float(cfg["points_alpha"]),
+            gap_bonus=bool(cfg["gap_bonus"]),
+            gap_bonus_coeff=float(cfg["gap_bonus_coeff"]),
+            exceptional_bonus=bool(cfg["exceptional_bonus"]),
+            exceptional_threshold=float(cfg["exceptional_threshold"]),
+            exceptional_points=float(cfg["exceptional_points"]),
+        )
 
-                with cB:
-                    metric_card(
-                        "🔥 Longest Streak",
-                        longest["display_name"] if longest is not None else None,
-                        (
-                            f"{int(longest['best_streak'])} wins"
-                            if longest is not None
-                            else None
-                        ),
-                    )
+        if lb.empty:
+            st.info("No data for current filters.")
+        else:
+            # KPI
+            k1, k2, k3, k4 = st.columns(4)
+            start_dt, end_dt = _range_to_df_tz(
+                joined["played_at"], start_date, end_date
+            )
+            total_sessions = joined[
+                (joined["game_name"].isin(selected_games))
+                & (joined["played_at"].between(start_dt, end_dt))
+            ]["session_id"].nunique()
+            total_players = lb.shape[0]
+            total_games = len(selected_games)
+            last_play = joined["played_at"].max()
+            k1.metric("Sessions", total_sessions)
+            k2.metric("Players", total_players)
+            k3.metric("Games", total_games)
+            k4.metric(
+                "Last played",
+                last_play.strftime("%Y-%m-%d") if pd.notna(last_play) else "—",
+            )
 
-                with cC:
-                    metric_card(
-                        "🎯 Best Win% (≥3 GP)",
-                        best_wr["display_name"] if best_wr is not None else None,
-                        (
-                            f"{best_wr['win_rate']*100:.0f}%"
-                            if best_wr is not None
-                            else None
-                        ),
-                    )
+            # ── Highlights strip ─────────────────────────────────────────────
+            champ = lb.loc[lb["elo"].idxmax()] if not lb.empty else None
+            longest = lb.loc[lb["best_streak"].idxmax()] if not lb.empty else None
+            eligible = lb[lb["games_played"] >= 3]
+            best_wr = (
+                eligible.loc[eligible["win_rate"].idxmax()]
+                if not eligible.empty
+                else None
+            )
+            most_active = lb.loc[lb["games_played"].idxmax()] if not lb.empty else None
 
-                with cD:
-                    metric_card(
-                        "👥 Most Active",
-                        (
-                            most_active["display_name"]
-                            if most_active is not None
-                            else None
-                        ),
-                        (
-                            f"{int(most_active['games_played'])} GP"
-                            if most_active is not None
-                            else None
-                        ),
-                    )
+            cA, cB, cC, cD = st.columns(4)
 
-                # ── Sexy Leaderboard: rank, medals, win% progress, streak flair ──
-                lb_disp = lb.copy()  # lb is already ELO-sorted from compute_leaderboard
-                lb_disp.insert(0, "#", np.arange(1, len(lb_disp) + 1))
-                medals = {1: "🥇", 2: "🥈", 3: "🥉"}
-                lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
-                lb_disp["🔥"] = np.where(lb_disp["current_streak"] >= 3, "🔥", "")
-                lb_disp["Win%"] = lb_disp["win_rate"] * 100.0
+            def metric_card(title, value, delta, color="green"):
+                display_value = value if value else "—"
+                display_delta = delta if delta else ""
+                st.markdown(
+                    f"""
+                    <div style="text-align:center; padding:0.5em; border-radius:8px; background-color:rgba(240,240,240,0.5);">
+                        <div style="font-size:0.9em; font-weight:bold;">{title}</div>
+                        <div style="font-size:1.1em; white-space:normal; word-break:break-word;">{display_value}</div>
+                        <div style="color:{color}; font-size:0.85em;">{display_delta}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-                show_cols = [
-                    "#",
-                    "🏅",
-                    "display_name",
-                    "elo",
-                    "wins",
-                    "games_played",
-                    "Win%",
-                    "avg_position",
-                    "avg_points",
-                    "current_streak",
-                    "best_streak",
-                    "last_played",
-                    "🔥",
-                ]
+            with cA:
+                metric_card(
+                    "🏆 Champion",
+                    champ["display_name"] if champ is not None else None,
+                    f"ELO {champ['elo']:.0f}" if champ is not None else None,
+                )
 
-                st.subheader("Leaderboard")
-                st.dataframe(
-                    lb_disp[show_cols].rename(
-                        columns={
-                            "display_name": "Player",
-                            "games_played": "GP",
-                            "wins": "W",
-                            "avg_position": "Avg Pos",
-                            "avg_points": "Avg Pts",
-                            "current_streak": "Streak",
-                            "best_streak": "Best Streak",
-                            "elo": "ELO",
-                            "last_played": "Last",
-                        }
+            with cB:
+                metric_card(
+                    "🔥 Longest Streak",
+                    longest["display_name"] if longest is not None else None,
+                    (
+                        f"{int(longest['best_streak'])} wins"
+                        if longest is not None
+                        else None
                     ),
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "#": st.column_config.NumberColumn(width="small"),
-                        "🏅": st.column_config.TextColumn(width="small", help="Top 3"),
-                        "Player": st.column_config.TextColumn(width="large"),
-                        "ELO": st.column_config.NumberColumn(
-                            format="%.0f", help="Higher is better"
-                        ),
-                        "W": st.column_config.NumberColumn(width="small"),
-                        "GP": st.column_config.NumberColumn(width="small"),
-                        "Win%": st.column_config.ProgressColumn(
-                            "Win%",
-                            help="Wins / Games Played",
-                            format="%.0f%%",
-                            min_value=0.0,
-                            max_value=100.0,
-                        ),
-                        "Avg Pos": st.column_config.NumberColumn(format="%.2f"),
-                        "Avg Pts": st.column_config.NumberColumn(format="%.2f"),
-                        "Streak": st.column_config.NumberColumn(
-                            width="small", help="Current winning streak"
-                        ),
-                        "Best Streak": st.column_config.NumberColumn(width="small"),
-                        "Last": st.column_config.DatetimeColumn(
-                            format="YYYY-MM-DD HH:mm"
-                        ),
-                        "🔥": st.column_config.TextColumn(
-                            width="small", help="Hot streak (3+ wins)"
-                        ),
-                    },
                 )
 
-                # ── Rating history chart ────────────────────────────────────────
-                st.subheader("📈 Player Rating Over Time")
-
-                # Choose players (defaults to top 3 by current ELO)
-                player_opts = lb["display_name"].tolist()
-                default_sel = player_opts[:3]
-                selected_players_rt = st.multiselect(
-                    "Select players",
-                    options=player_opts,
-                    default=default_sel,
+            with cC:
+                metric_card(
+                    "🎯 Best Win% (≥3 GP)",
+                    best_wr["display_name"] if best_wr is not None else None,
+                    f"{best_wr['win_rate']*100:.0f}%" if best_wr is not None else None,
                 )
 
-                if selected_players_rt and not ratings_over_time.empty:
-                    plot_df = ratings_over_time[
-                        ratings_over_time["player_name"].isin(selected_players_rt)
-                    ]
-                    if not plot_df.empty:
-                        # make sure it's sorted for nice lines
-                        plot_df = plot_df.sort_values(["player_name", "played_at"])
-
-                        fig = go.Figure()
-                        for pname, grp in plot_df.groupby("player_name", sort=False):
-                            fig.add_trace(
-                                go.Scatter(
-                                    x=grp["played_at"],
-                                    y=grp["elo"],
-                                    mode="lines+markers",
-                                    name=pname,
-                                    hovertemplate="<b>%{text}</b><br>%{x|%Y-%m-%d %H:%M}<br>ELO: %{y:.0f}<extra></extra>",
-                                    text=[pname] * len(grp),
-                                )
-                            )
-                        fig.update_layout(
-                            title="ELO progression (respects current filters)",
-                            xaxis_title="Date",
-                            yaxis_title="ELO",
-                            hovermode="x unified",
-                            margin=dict(l=0, r=0, t=60, b=0),
-                        )
-                        st.plotly_chart(fig, use_container_width=True)
-                    else:
-                        st.info("No data for selected players in current filters.")
-                else:
-                    st.caption("Pick one or more players to see their rating history.")
-
-                st.subheader("Head-to-Head (times row finished ahead of column)")
-                render_h2h_heatmap(
-                    h2h, title="Head-to-Head (row finished ahead of column)"
+            with cD:
+                metric_card(
+                    "👥 Most Active",
+                    most_active["display_name"] if most_active is not None else None,
+                    (
+                        f"{int(most_active['games_played'])} GP"
+                        if most_active is not None
+                        else None
+                    ),
                 )
 
-                st.subheader("Recent Sessions")
-                rename_map = {
-                    "played_at": "Date",
-                    "game_name": "Game",
-                    "location": "Location",
-                    "notes": "Notes",
-                    "winners": "Winners",
-                }
-                st.dataframe(
-                    recent.rename(columns=rename_map),
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Date": st.column_config.DatetimeColumn(
-                            format="YYYY-MM-DD HH:mm"
-                        )
-                    },
-                )
+            # ── Sexy Leaderboard: rank, medals, win% progress, streak flair ──
+            lb_disp = lb.copy()  # lb is already ELO-sorted from compute_leaderboard
+            lb_disp.insert(0, "#", np.arange(1, len(lb_disp) + 1))
+            medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+            lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
+            lb_disp["🔥"] = np.where(lb_disp["current_streak"] >= 3, "🔥", "")
+            lb_disp["Win%"] = lb_disp["win_rate"] * 100.0
 
-                st.download_button(
-                    "Download leaderboard (CSV)",
-                    data=lb.to_csv(index=False).encode("utf-8"),
-                    file_name="leaderboard.csv",
-                )
-    # ───────────────── BoardGamDLE (new) ─────────────────
-    with tabs_g[1]:
-        # 1) ensure yesterday awards are handled (idempotent)
-        award_yesterday_if_needed()
+            show_cols = [
+                "#",
+                "🏅",
+                "display_name",
+                "elo",
+                "wins",
+                "games_played",
+                "Win%",
+                "avg_position",
+                "avg_points",
+                "current_streak",
+                "best_streak",
+                "last_played",
+                "🔥",
+            ]
 
-        games_df = sb_select("games")
-        players_df = sb_select("players")
-        if games_df.empty or players_df.empty:
-            st.info("Admin must add at least one game and one player first.")
-            st.stop()
-
-        today_key = daily_key_utc()
-        yday_key = prev_daily_key_utc()
-
-        # previous day's answer (if we had one)
-        prev_row = sb_select("daily_game")
-        prev_row = (
-            prev_row[prev_row["date_key"] == yday_key]
-            if not prev_row.empty
-            else pd.DataFrame()
-        )
-        prev_ans_name = None
-        if not prev_row.empty:
-            gid = prev_row["game_id"].iloc[0]
-            gname_map = dict(zip(games_df["id"], games_df["name"]))
-            prev_ans_name = gname_map.get(gid, None)
-        st.caption(
-            f"🕓 Daily rolls over at 03:00 UTC • Yesterday’s answer: **{prev_ans_name or '—'}**"
-        )
-
-        # ensure today's daily exists
-        answer_game_id = ensure_daily_game_exists(today_key, games_df)
-        if not answer_game_id:
-            st.error("Could not load today's daily game.")
-            st.stop()
-
-        # Login / PIN
-        name_to_id = dict(zip(players_df["name"], players_df["id"]))
-        id_to_name = dict(zip(players_df["id"], players_df["name"]))
-
-        st.subheader("Login")
-        lc1, lc2, lc3 = st.columns([3, 2, 1])
-        sel_name = lc1.selectbox(
-            "Your player", options=sorted(players_df["name"].tolist())
-        )
-        pin = lc2.text_input("PIN", type="password")
-        if "bgd_auth" not in st.session_state:
-            st.session_state["bgd_auth"] = None
-
-        # Allow first-time PIN set if none exists and player has at least one session
-        can_set_pin = False
-        try:
-            pid_for_set = name_to_id.get(sel_name)
-            played_any = (
-                not sb_select_sessions_joined().query("player_id == @pid_for_set").empty
-            )
-            # check has existing pin
-            have_pin = False
-            if supabase and pid_for_set:
-                r = (
-                    supabase.table("player_auth")
-                    .select("*")
-                    .eq("player_id", pid_for_set)
-                    .execute()
-                    .data
-                    or []
-                )
-                have_pin = bool(r)
-            can_set_pin = (not have_pin) and played_any
-        except Exception:
-            pass
-
-        set_pin_exp = st.expander("First time? Set or reset your PIN", expanded=False)
-        with set_pin_exp:
-            new_pin = st.text_input(
-                "New PIN (4–8 digits)", type="password", max_chars=8, key="bgd_newpin"
-            )
-            if st.button("Save PIN"):
-                if not new_pin or len(new_pin) < 4:
-                    st.error("Please enter 4–8 digits.")
-                else:
-                    ok = set_pin(name_to_id[sel_name], new_pin)
-                    if ok:
-                        st.success("PIN saved. You can now log in above.")
-
-        if lc3.button("Log in"):
-            pid = name_to_id.get(sel_name)
-            if not pid:
-                st.error("Unknown player.")
-            elif not pin:
-                st.error("Enter your PIN.")
-            elif not check_pin(pid, pin):
-                st.error("Wrong PIN.")
-            else:
-                st.session_state["bgd_auth"] = {
-                    "player_id": pid,
-                    "player_name": sel_name,
-                }
-
-        if not st.session_state["bgd_auth"]:
-            st.stop()
-
-        pid = st.session_state["bgd_auth"]["player_id"]
-        st.success(f"Welcome, {st.session_state['bgd_auth']['player_name']}!")
-
-        # Guess UI
-        st.subheader("Make a guess")
-        gcol1, gcol2 = st.columns([4, 1])
-        guess_name = gcol1.selectbox(
-            "Guess the game", options=sorted(games_df["name"].tolist())
-        )
-        if gcol2.button("Submit guess"):
-            gid = dict(zip(games_df["name"], games_df["id"])).get(guess_name)
-            if gid:
-                # how many attempts so far today?
-                prev = (
-                    supabase.table("loldle_attempts")
-                    .select("attempt_no")
-                    .eq("date_key", today_key)
-                    .eq("player_id", pid)
-                    .order("attempt_no", desc=True)
-                    .limit(1)
-                    .execute()
-                    .data
-                    or []
-                )
-                next_no = (prev[0]["attempt_no"] + 1) if prev else 1
-                is_correct = gid == answer_game_id
-                supabase.table("loldle_attempts").insert(
-                    {
-                        "id": _uuid(),
-                        "date_key": today_key,
-                        "player_id": pid,
-                        "guess_game_id": gid,
-                        "is_correct": is_correct,
-                        "attempt_no": next_no,
-                    }
-                ).execute()
-                if is_correct:
-                    st.balloons()
-                    st.success("Correct!")
-
-        # Personal history today
-        my_attempts = (
-            supabase.table("loldle_attempts")
-            .select("*")
-            .eq("date_key", today_key)
-            .eq("player_id", pid)
-            .order("created_at")
-            .execute()
-            .data
-            or []
-        )
-        if my_attempts:
-            mdf = pd.DataFrame(my_attempts)
-            first_ts = pd.to_datetime(mdf["created_at"].iloc[0])
-            solved_rows = mdf[mdf["is_correct"]]
-            if not solved_rows.empty:
-                solved_ts = pd.to_datetime(solved_rows["created_at"].iloc[0])
-                elapsed = (solved_ts - first_ts).total_seconds()
-                st.info(
-                    f"You solved it in **{int(solved_rows['attempt_no'].iloc[0])} attempts** and **{int(elapsed)}s**."
-                )
+            st.subheader("Leaderboard")
             st.dataframe(
-                mdf.merge(
-                    games_df[["id", "name"]],
-                    left_on="guess_game_id",
-                    right_on="id",
-                    how="left",
-                )[["attempt_no", "name", "is_correct", "created_at"]].rename(
-                    columns={"name": "Guess", "is_correct": "✓", "created_at": "When"}
+                lb_disp[show_cols].rename(
+                    columns={
+                        "display_name": "Player",
+                        "games_played": "GP",
+                        "wins": "W",
+                        "avg_position": "Avg Pos",
+                        "avg_points": "Avg Pts",
+                        "current_streak": "Streak",
+                        "best_streak": "Best Streak",
+                        "elo": "ELO",
+                        "last_played": "Last",
+                    }
                 ),
                 use_container_width=True,
                 hide_index=True,
+                column_config={
+                    "#": st.column_config.NumberColumn(width="small"),
+                    "🏅": st.column_config.TextColumn(width="small", help="Top 3"),
+                    "Player": st.column_config.TextColumn(width="large"),
+                    "ELO": st.column_config.NumberColumn(
+                        format="%.0f", help="Higher is better"
+                    ),
+                    "W": st.column_config.NumberColumn(width="small"),
+                    "GP": st.column_config.NumberColumn(width="small"),
+                    "Win%": st.column_config.ProgressColumn(
+                        "Win%",
+                        help="Wins / Games Played",
+                        format="%.0f%%",
+                        min_value=0.0,
+                        max_value=100.0,
+                    ),
+                    "Avg Pos": st.column_config.NumberColumn(format="%.2f"),
+                    "Avg Pts": st.column_config.NumberColumn(format="%.2f"),
+                    "Streak": st.column_config.NumberColumn(
+                        width="small", help="Current winning streak"
+                    ),
+                    "Best Streak": st.column_config.NumberColumn(width="small"),
+                    "Last": st.column_config.DatetimeColumn(format="YYYY-MM-DD HH:mm"),
+                    "🔥": st.column_config.TextColumn(
+                        width="small", help="Hot streak (3+ wins)"
+                    ),
+                },
             )
 
-        # Daily leaderboard (attempts asc, total time asc)
-        st.subheader("Today’s leaderboard")
-        today_att = (
-            supabase.table("loldle_attempts")
-            .select("*")
-            .eq("date_key", today_key)
-            .order("created_at")
-            .execute()
-            .data
-            or []
-        )
-        if today_att:
-            tdf = pd.DataFrame(today_att)
-            summaries = []
-            for p, g in tdf.groupby("player_id"):
-                g = g.sort_values("created_at")
-                first_ts = pd.to_datetime(g["created_at"].iloc[0])
-                win = g[g["is_correct"]]
-                if not win.empty:
-                    solved_ts = pd.to_datetime(win["created_at"].iloc[0])
-                    summaries.append(
-                        {
-                            "player_id": p,
-                            "Player": id_to_name.get(p, p),
-                            "Attempts": int(win["attempt_no"].iloc[0]),
-                            "Time (s)": int((solved_ts - first_ts).total_seconds()),
-                        }
+            # ── Rating history chart ────────────────────────────────────────
+            st.subheader("📈 Player Rating Over Time")
+
+            # Choose players (defaults to top 3 by current ELO)
+            player_opts = lb["display_name"].tolist()
+            default_sel = player_opts[:3]
+            selected_players_rt = st.multiselect(
+                "Select players",
+                options=player_opts,
+                default=default_sel,
+            )
+
+            if selected_players_rt and not ratings_over_time.empty:
+                plot_df = ratings_over_time[
+                    ratings_over_time["player_name"].isin(selected_players_rt)
+                ]
+                if not plot_df.empty:
+                    # make sure it's sorted for nice lines
+                    plot_df = plot_df.sort_values(["player_name", "played_at"])
+
+                    fig = go.Figure()
+                    for pname, grp in plot_df.groupby("player_name", sort=False):
+                        fig.add_trace(
+                            go.Scatter(
+                                x=grp["played_at"],
+                                y=grp["elo"],
+                                mode="lines+markers",
+                                name=pname,
+                                hovertemplate="<b>%{text}</b><br>%{x|%Y-%m-%d %H:%M}<br>ELO: %{y:.0f}<extra></extra>",
+                                text=[pname] * len(grp),
+                            )
+                        )
+                    fig.update_layout(
+                        title="ELO progression (respects current filters)",
+                        xaxis_title="Date",
+                        yaxis_title="ELO",
+                        hovermode="x unified",
+                        margin=dict(l=0, r=0, t=60, b=0),
                     )
-            if summaries:
-                s = pd.DataFrame(summaries).sort_values(
-                    ["Attempts", "Time (s)", "Player"]
-                )
-                st.dataframe(s, use_container_width=True, hide_index=True)
-                st.caption(
-                    "Podium at 03:00 UTC gets ELO bonuses: 4/2/1 (2 players: 2/1, 1 player: 1)."
-                )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("No data for selected players in current filters.")
             else:
-                st.info("No one has solved it yet.")
-        else:
-            st.info("Be the first to guess today!")
+                st.caption("Pick one or more players to see their rating history.")
+
+            st.subheader("Head-to-Head (times row finished ahead of column)")
+            render_h2h_heatmap(h2h, title="Head-to-Head (row finished ahead of column)")
+
+            st.subheader("Recent Sessions")
+            rename_map = {
+                "played_at": "Date",
+                "game_name": "Game",
+                "location": "Location",
+                "notes": "Notes",
+                "winners": "Winners",
+            }
+            st.dataframe(
+                recent.rename(columns=rename_map),
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Date": st.column_config.DatetimeColumn(format="YYYY-MM-DD HH:mm")
+                },
+            )
+
+            st.download_button(
+                "Download leaderboard (CSV)",
+                data=lb.to_csv(index=False).encode("utf-8"),
+                file_name="leaderboard.csv",
+            )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
