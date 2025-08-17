@@ -372,6 +372,182 @@ def _run_daily_awards_if_needed():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Locker: items, drops, crafting
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Catalog for pretty names/icons
+ITEM_DB = {
+    # boxes (inventory)
+    "BOX_BRONZE": {"label": "Bronze Box", "icon": "📦"},
+    "BOX_SILVER": {"label": "Silver Box", "icon": "🎁"},
+    "BOX_GOLD": {"label": "Gold Box", "icon": "🗃️"},
+    # currency
+    "DUST": {"label": "Emoji Dust", "icon": "✨"},
+    # emoji items
+    "EMOJI_STAR": {"label": "Star", "icon": "⭐"},
+    "EMOJI_FIRE": {"label": "Fire", "icon": "🔥"},
+    "EMOJI_APPLE": {"label": "Apple", "icon": "🍎"},
+    "EMOJI_CROWN": {"label": "Crown", "icon": "👑"},
+    # voucher (inventory)
+    "V_PICK_NEXT_GAME": {"label": "Voucher: Pick Next Game", "icon": "🎟️"},
+    # cosmetics (owned list)
+    "font_arcade": {"label": "Font: Arcade", "icon": "🅰️"},
+    "font_clean": {"label": "Font: Clean", "icon": "🔡"},
+    "font_serif": {"label": "Font: Serif", "icon": "🔠"},
+    "font_hand": {"label": "Font: Handwritten", "icon": "✍️"},
+    "font_display": {"label": "Font: Display", "icon": "🆒"},
+    "badge_star": {"label": "Badge: Star", "icon": "🌟"},
+    "badge_crown": {"label": "Badge: Crown", "icon": "👑"},
+    "title_emoji_hunter": {"label": "Title: Emoji Hunter", "icon": "🏹"},
+    "title_box_breaker": {"label": "Title: Box Breaker", "icon": "📦"},
+}
+
+EMOJI_ITEM_POOL = ["EMOJI_STAR", "EMOJI_FIRE", "EMOJI_APPLE", "EMOJI_CROWN"]
+
+
+def _item_label(code: str) -> str:
+    meta = ITEM_DB.get(code, {"label": code, "icon": "•"})
+    return f"{meta.get('icon','•')} {meta.get('label',code)}"
+
+
+def _bag_count(pid: str, code: str) -> int:
+    bag = _get_player_bag(pid)
+    return int(bag.get("inventory", {}).get(code, 0))
+
+
+def _bag_spend(pid: str, code: str, qty: int) -> bool:
+    bag = _get_player_bag(pid)
+    inv = bag.get("inventory", {})
+    have = int(inv.get(code, 0))
+    if have < qty:
+        return False
+    inv[code] = have - qty
+    if inv[code] <= 0:
+        inv.pop(code, None)
+    bag["inventory"] = inv
+    return _save_player_bag(pid, bag)
+
+
+def _bag_add_owned_cosmetic(pid: str, cos_code: str) -> bool:
+    bag = _get_player_bag(pid)
+    cos = bag.get("cosmetics", {})
+    owned = cos.get("owned", [])
+    if cos_code not in owned:
+        owned.append(cos_code)
+    cos["owned"] = owned
+    bag["cosmetics"] = cos
+    return _save_player_bag(pid, bag)
+
+
+# Weighted drop-tables for boxes
+# Each entry: dict(type: 'inventory'|'cosmetic', code: str or list, weight: int, qty: (min,max)|int)
+BOX_TABLES = {
+    "BOX_BRONZE": [
+        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 65, "qty": (1, 3)},
+        {"type": "inventory", "code": "DUST", "weight": 20, "qty": (4, 8)},
+        {"type": "cosmetic", "code": "font_clean", "weight": 10, "qty": 1},
+        {"type": "cosmetic", "code": "font_serif", "weight": 5, "qty": 1},
+    ],
+    "BOX_SILVER": [
+        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 50, "qty": (2, 5)},
+        {"type": "inventory", "code": "DUST", "weight": 30, "qty": (10, 16)},
+        {
+            "type": "cosmetic",
+            "code": ["font_serif", "font_hand", "badge_star", "title_emoji_hunter"],
+            "weight": 15,
+            "qty": 1,
+        },
+        {"type": "cosmetic", "code": "font_arcade", "weight": 5, "qty": 1},
+    ],
+    "BOX_GOLD": [
+        {"type": "inventory", "code": "DUST", "weight": 35, "qty": (20, 28)},
+        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 35, "qty": (5, 8)},
+        {
+            "type": "cosmetic",
+            "code": ["font_arcade", "font_display", "badge_crown", "title_box_breaker"],
+            "weight": 20,
+            "qty": 1,
+        },
+        {"type": "inventory", "code": "V_PICK_NEXT_GAME", "weight": 10, "qty": 1},
+    ],
+}
+
+
+def _weighted_pick(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
+    weights = np.array([e["weight"] for e in entries], dtype=float)
+    weights = weights / weights.sum()
+    idx = np.random.choice(len(entries), p=weights)
+    return entries[int(idx)]
+
+
+def _normalize_qty(q) -> int:
+    if isinstance(q, (list, tuple)) and len(q) == 2:
+        return int(np.random.randint(int(q[0]), int(q[1]) + 1))
+    return int(q)
+
+
+def _resolve_code(code):
+    if isinstance(code, list):
+        return str(np.random.choice(code))
+    return str(code)
+
+
+def _give_reward(pid: str, item_code: str, qty: int, is_cosmetic: bool) -> None:
+    if is_cosmetic:
+        _bag_add_owned_cosmetic(pid, item_code)
+    else:
+        _bag_add(pid, item_code, qty)
+
+
+def _open_box_once(pid: str, box_code: str) -> Tuple[str, int, bool]:
+    table = BOX_TABLES.get(box_code)
+    if not table:
+        return ("DUST", 1, False)
+    prize = _weighted_pick(table)
+    code = _resolve_code(prize["code"])
+    qty = _normalize_qty(prize.get("qty", 1))
+    is_cosmetic = prize["type"] == "cosmetic"
+    _give_reward(pid, code, qty, is_cosmetic)
+    return (code, qty, is_cosmetic)
+
+
+def _open_boxes(pid: str, box_code: str, n: int) -> List[Tuple[str, int, bool]]:
+    results = []
+    for _ in range(n):
+        results.append(_open_box_once(pid, box_code))
+    # spend boxes after success
+    _bag_spend(pid, box_code, n)
+    return results
+
+
+# Simple crafting recipes: { result_cosmetic: {cost_item: qty, ...} }
+CRAFT_RECIPES: Dict[str, Dict[str, int]] = {
+    "badge_star": {"EMOJI_STAR": 20},
+    "font_hand": {"DUST": 50},
+    "title_emoji_hunter": {"EMOJI_STAR": 10, "EMOJI_APPLE": 10},
+}
+
+
+def _can_craft(pid: str, cos_code: str) -> bool:
+    need = CRAFT_RECIPES.get(cos_code, {})
+    return all(_bag_count(pid, k) >= v for k, v in need.items())
+
+
+def _craft(pid: str, cos_code: str) -> bool:
+    if cos_code not in CRAFT_RECIPES:
+        return False
+    need = CRAFT_RECIPES[cos_code]
+    if not _can_craft(pid, cos_code):
+        return False
+    # spend
+    for k, v in need.items():
+        if not _bag_spend(pid, k, v):
+            return False
+    # grant cosmetic
+    return _bag_add_owned_cosmetic(pid, cos_code)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Defaults & Config Helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1321,6 +1497,229 @@ def render_daily_game():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Locker tab UI
+# ─────────────────────────────────────────────────────────────────────────────
+def render_locker():
+    st.title("🎒 Locker — Open, Craft, Equip")
+
+    players_df = sb_select("players")
+    pid = _login_gate(players_df, key_prefix="locker")
+    if not pid:
+        st.info("Login to manage your locker.")
+        return
+
+    # Load bag & cosmetics
+    bag = _get_player_bag(pid)
+    inv = bag.get("inventory", {})
+    cos = bag.get("cosmetics", {})
+    owned = cos.get("owned", [])
+    eq = cos.get("equipped", {})
+
+    # Font preview
+    _inject_font_css(eq.get("font"))
+
+    # Nameplate
+    pname = players_df.set_index("id").loc[pid, "name"]
+    st.markdown(
+        f"""
+        <div class="player-nameplate" style="
+            padding: 12px 16px; border-radius: 10px;
+            background: rgba(240,240,240,0.6);
+            border: 2px solid #ddd; display:inline-block;">
+            <div style="font-size: 20px; font-weight: 700;">{pname}</div>
+            <div style="font-size: 13px; opacity: 0.8;">
+                {ITEM_DB.get(eq.get('badge',''),{}).get('icon','')} {ITEM_DB.get(eq.get('badge',''),{}).get('label','No badge')}
+                 • {ITEM_DB.get(eq.get('title',''),{}).get('label','No title')}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.divider()
+    tabs = st.tabs(["Inventory", "Open Boxes", "Crafting", "Equip"])
+
+    # ============ Inventory ============
+    with tabs[0]:
+        if inv:
+            df = pd.DataFrame(
+                [
+                    {"Item": _item_label(k), "Code": k, "Qty": v}
+                    for k, v in sorted(inv.items())
+                ]
+            )
+            st.dataframe(
+                df[["Item", "Qty", "Code"]], use_container_width=True, hide_index=True
+            )
+        else:
+            st.caption("Your inventory is empty.")
+        st.caption(
+            "Voucher items (e.g., 🎟️) appear here until an admin honors them in person."
+        )
+
+    # ============ Open Boxes ============
+    with tabs[1]:
+        st.subheader("Open Boxes")
+        counts = {k: inv.get(k, 0) for k in ["BOX_BRONZE", "BOX_SILVER", "BOX_GOLD"]}
+        c1, c2, c3 = st.columns(3)
+        c1.metric(_item_label("BOX_BRONZE"), counts["BOX_BRONZE"])
+        c2.metric(_item_label("BOX_SILVER"), counts["BOX_SILVER"])
+        c3.metric(_item_label("BOX_GOLD"), counts["BOX_GOLD"])
+
+        box_choice = st.radio(
+            "Choose box",
+            ["BOX_BRONZE", "BOX_SILVER", "BOX_GOLD"],
+            format_func=_item_label,
+            horizontal=True,
+        )
+        max_open = int(min(25, counts.get(box_choice, 0)))
+        qty = st.number_input(
+            "How many to open",
+            min_value=1,
+            max_value=max_open if max_open > 0 else 1,
+            value=min(5, max_open if max_open > 0 else 1),
+            step=1,
+        )
+        if max_open <= 0:
+            st.warning("You have none of this box.")
+        else:
+            if st.button("Open now ✨"):
+                results = _open_boxes(pid, box_choice, int(qty))
+                # Aggregate results
+                agg: Dict[str, Dict[str, Any]] = {}
+                cos_drops = 0
+                for code, q, is_cos in results:
+                    d = agg.setdefault(code, {"qty": 0, "cos": is_cos})
+                    d["qty"] += q
+                    if is_cos:
+                        cos_drops += 1
+                df = pd.DataFrame(
+                    [
+                        {
+                            "Drop": _item_label(k),
+                            "Qty": v["qty"],
+                            "Type": "Cosmetic" if v["cos"] else "Item",
+                        }
+                        for k, v in agg.items()
+                    ]
+                ).sort_values(["Type", "Drop"], ascending=[False, True])
+                st.success("Opened! Here’s what you got:")
+                st.dataframe(df, use_container_width=True, hide_index=True)
+                if cos_drops:
+                    st.balloons()
+
+    # ============ Crafting ============
+    with tabs[2]:
+        st.subheader("Craft cosmetics from items")
+        if not CRAFT_RECIPES:
+            st.caption("No recipes yet.")
+        else:
+            for cos_code, req in CRAFT_RECIPES.items():
+                have = " / ".join(
+                    [
+                        f"{_item_label(k)} {min(_bag_count(pid,k),v)}/{v}"
+                        for k, v in req.items()
+                    ]
+                )
+                cA, cB = st.columns([3, 1])
+                with cA:
+                    st.markdown(f"**{_item_label(cos_code)}**  \nRequires: {have}")
+                can = _can_craft(pid, cos_code)
+                disabled = not can
+                if cB.button("Craft", key=f"craft_{cos_code}", disabled=disabled):
+                    if _craft(pid, cos_code):
+                        st.success(f"Crafted {_item_label(cos_code)}!")
+                        st.balloons()
+                    else:
+                        st.error("Craft failed. Check materials.")
+
+    # ============ Equip ============
+    with tabs[3]:
+        st.subheader("Equip your look")
+        # Owned buckets
+        owned_fonts = [c for c in owned if c.startswith("font_")]
+        owned_badges = [c for c in owned if c.startswith("badge_")]
+        owned_titles = [c for c in owned if c.startswith("title_")]
+
+        # Fonts
+        st.markdown("**Font**")
+        if owned_fonts:
+            sel_f = st.selectbox(
+                "Choose font",
+                options=owned_fonts,
+                format_func=_item_label,
+                index=(
+                    owned_fonts.index(eq.get("font"))
+                    if eq.get("font") in owned_fonts
+                    else 0
+                ),
+                key="equip_font_sel",
+            )
+            e1, e2 = st.columns([1, 1])
+            if e1.button("Equip font", key="equip_font_btn"):
+                if _equip_cosmetic(pid, "font", sel_f):
+                    st.success("Font equipped.")
+                    _inject_font_css(sel_f)
+            if e2.button("Unequip font", key="unequip_font_btn"):
+                if _equip_cosmetic(pid, "font", None):
+                    st.success("Font removed.")
+        else:
+            st.caption("You don’t own any font cosmetics yet.")
+
+        st.markdown("---")
+
+        # Badge
+        st.markdown("**Badge**")
+        if owned_badges:
+            sel_b = st.selectbox(
+                "Choose badge",
+                options=owned_badges,
+                format_func=_item_label,
+                index=(
+                    owned_badges.index(eq.get("badge"))
+                    if eq.get("badge") in owned_badges
+                    else 0
+                ),
+                key="equip_badge_sel",
+            )
+            b1, b2 = st.columns([1, 1])
+            if b1.button("Equip badge", key="equip_badge_btn"):
+                if _equip_cosmetic(pid, "badge", sel_b):
+                    st.success("Badge equipped.")
+            if b2.button("Unequip badge", key="unequip_badge_btn"):
+                if _equip_cosmetic(pid, "badge", None):
+                    st.success("Badge removed.")
+        else:
+            st.caption("No badges yet. Craft or find them in boxes.")
+
+        st.markdown("---")
+
+        # Title
+        st.markdown("**Title**")
+        if owned_titles:
+            sel_t = st.selectbox(
+                "Choose title",
+                options=owned_titles,
+                format_func=_item_label,
+                index=(
+                    owned_titles.index(eq.get("title"))
+                    if eq.get("title") in owned_titles
+                    else 0
+                ),
+                key="equip_title_sel",
+            )
+            t1, t2 = st.columns([1, 1])
+            if t1.button("Equip title", key="equip_title_btn"):
+                if _equip_cosmetic(pid, "title", sel_t):
+                    st.success("Title equipped.")
+            if t2.button("Unequip title", key="unequip_title_btn"):
+                if _equip_cosmetic(pid, "title", None):
+                    st.success("Title removed.")
+        else:
+            st.caption("No titles yet. Craft or find them in boxes.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Sidebar
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1350,7 +1749,6 @@ if mode == "General":
     st.title("🏆 Game Night Leaderboard")
     tabs_general = st.tabs(["Leaderboard", "Daily Game", "Profiles"])
     with tabs_general[0]:
-        st.title("🏆 Game Night Leaderboard")
         joined = sb_select_sessions_joined()
         games_df = sb_select("games")
 
@@ -1769,7 +2167,9 @@ if mode == "General":
             st.caption(
                 "Profiles here are view-only. Admins can edit in Admin ▸ Players."
             )
-
+        # ===== TAB 4: Locker (open, craft, equip) =====
+    with tabs_general[3]:
+        render_locker()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Moderator (submit session requests only)
