@@ -58,6 +58,318 @@ else:
         "Supabase credentials missing. Set SUPABASE_URL and SUPABASE_ANON_KEY."
     )
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Daily mini-game constants, fonts, helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+DAY_ROLLOVER_HOUR_UTC = 3  # 03:00 UTC = new day
+MINIGAME_NAME = "Odd Emoji Out"
+OEO_DURATION_S = 60
+OEO_START_GRID = 3
+OEO_MAX_GRID = 7
+
+# Cosmetic fonts (stored as cosmetic code in bag.equipped.font)
+FONT_CATALOG = {
+    "font_arcade": {
+        "label": "Arcade",
+        "import": "https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap",
+        "css_family": "'Press Start 2P', cursive",
+    },
+    "font_clean": {
+        "label": "Clean",
+        "import": "https://fonts.googleapis.com/css2?family=Rubik:wght@400;600&display=swap",
+        "css_family": "'Rubik', sans-serif",
+    },
+    "font_serif": {
+        "label": "Serif",
+        "import": "https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap",
+        "css_family": "'Merriweather', serif",
+    },
+    "font_hand": {
+        "label": "Handwritten",
+        "import": "https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap",
+        "css_family": "'Kalam', cursive",
+    },
+    "font_display": {
+        "label": "Display",
+        "import": "https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap",
+        "css_family": "'Bebas Neue', sans-serif",
+    },
+}
+
+
+def _utc_now() -> datetime:
+    return datetime.utcnow()
+
+
+def _today_key_utc() -> str:
+    now = _utc_now()
+    if now.hour < DAY_ROLLOVER_HOUR_UTC:
+        day = now.date() - timedelta(days=1)
+    else:
+        day = now.date()
+    return day.strftime("%Y-%m-%d")
+
+
+def _yesterday_key_utc() -> str:
+    now = _utc_now()
+    # "Yesterday" relative to rollover window:
+    if now.hour < DAY_ROLLOVER_HOUR_UTC:
+        day = now.date() - timedelta(days=2)
+    else:
+        day = now.date() - timedelta(days=1)
+    return day.strftime("%Y-%m-%d")
+
+
+def _inject_font_css(font_code: Optional[str]):
+    if not font_code:
+        return
+    font = FONT_CATALOG.get(font_code)
+    if not font:
+        return
+    st.markdown(
+        f"<link href='{font['import']}' rel='stylesheet'>", unsafe_allow_html=True
+    )
+    st.markdown(
+        f"""
+        <style>
+        .player-nameplate, .cosmetic-font {{
+            font-family: {font['css_family']} !important;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _row_to_bag(bag_any: Any) -> Dict[str, Any]:
+    bag = _as_dict(bag_any)
+    bag.setdefault(
+        "inventory", {}
+    )  # flat counts (e.g., "BOX_GOLD": 2, "EMOJI_APPLE": 5)
+    bag.setdefault("cosmetics", {"owned": [], "equipped": {}})
+    bag["cosmetics"].setdefault("equipped", {})
+    return bag
+
+
+def _get_player_bag(pid: str) -> Dict[str, Any]:
+    if not supabase:
+        return _row_to_bag({})
+    try:
+        res = supabase.table("players").select("bag").eq("id", pid).execute()
+        rows = res.data or []
+        if rows:
+            return _row_to_bag(rows[0].get("bag"))
+    except Exception:
+        pass
+    return _row_to_bag({})
+
+
+def _save_player_bag(pid: str, bag: Dict[str, Any]) -> bool:
+    if not supabase:
+        return False
+    try:
+        supabase.table("players").update({"bag": bag}).eq("id", pid).execute()
+        return True
+    except Exception as e:
+        st.error(f"Failed to save bag: {e}")
+        return False
+
+
+def _bag_add(pid: str, code: str, qty: int = 1) -> bool:
+    bag = _get_player_bag(pid)
+    inv = bag["inventory"]
+    inv[code] = int(inv.get(code, 0)) + int(qty)
+    bag["inventory"] = inv
+    return _save_player_bag(pid, bag)
+
+
+def _equip_cosmetic(pid: str, slot: str, code: Optional[str]) -> bool:
+    bag = _get_player_bag(pid)
+    eq = bag["cosmetics"]["equipped"]
+    if code:
+        # Only allow equipping owned cosmetics
+        if code not in bag["cosmetics"].get("owned", []):
+            st.error("You don't own this cosmetic.")
+            return False
+        eq[slot] = code
+    else:
+        eq.pop(slot, None)
+    bag["cosmetics"]["equipped"] = eq
+    return _save_player_bag(pid, bag)
+
+
+# Simple login gate: PIN + Emoji
+def _login_gate(players_df: pd.DataFrame, key_prefix: str) -> Optional[str]:
+    st.markdown("### 🔐 Quick Login")
+    if players_df.empty:
+        st.info("No players yet.")
+        return None
+
+    pname = st.selectbox(
+        "Player", options=players_df["name"].tolist(), key=f"{key_prefix}_pname"
+    )
+    pin = st.text_input(
+        "4-digit PIN", type="password", max_chars=4, key=f"{key_prefix}_pin"
+    )
+    emojis = [
+        "😀",
+        "😎",
+        "🤖",
+        "🐸",
+        "🐼",
+        "🦊",
+        "🐵",
+        "🐱",
+        "🐶",
+        "🐯",
+        "🐻",
+        "🐨",
+        "🐷",
+        "🐮",
+        "",
+        "🐤",
+        "🐙",
+        "🐳",
+        "🦄",
+        "🐲",
+        "🍀",
+        "🍕",
+        "🍩",
+        "⚽",
+        "🏀",
+        "🎲",
+        "⭐",
+        "🔥",
+        "❄️",
+        "🌙",
+    ]
+    chosen = st.selectbox("Emoji", emojis, key=f"{key_prefix}_emoji")
+
+    verified_pid = st.session_state.get(f"{key_prefix}_verified_pid")
+    verified_until = st.session_state.get(f"{key_prefix}_verified_until")
+
+    still_valid = bool(verified_pid and verified_until and _utc_now() < verified_until)
+    if still_valid:
+        st.success("Session verified")
+        return verified_pid
+
+    if st.button("Verify", key=f"{key_prefix}_verify"):
+        row = players_df.loc[players_df["name"] == pname].head(1)
+        if row.empty:
+            st.error("Unknown player.")
+            return None
+        row = row.iloc[0]
+        ok_pin = str(row.get("pin_code") or "") == str(pin or "")
+        ok_emo = (row.get("emoji_lock") or "") == chosen
+        if ok_pin and ok_emo:
+            st.session_state[f"{key_prefix}_verified_pid"] = row["id"]
+            st.session_state[f"{key_prefix}_verified_until"] = _utc_now() + timedelta(
+                minutes=5
+            )
+            st.success("Verified for 5 minutes")
+            return row["id"]
+        else:
+            st.error("Wrong PIN or emoji.")
+            return None
+    return None
+
+
+# Update "best of day" convenience flag after inserting a run
+def _set_best_of_day(date_key: str, player_id: str):
+    if not supabase:
+        return
+    try:
+        # reset flags for that player/day
+        supabase.table("minigame_scores").update({"is_best_for_day": False}).eq(
+            "date_key", date_key
+        ).eq("player_id", player_id).execute()
+        # pick best score (tie: earliest finish wins)
+        best = (
+            supabase.table("minigame_scores")
+            .select("id,score,finished_at")
+            .eq("date_key", date_key)
+            .eq("player_id", player_id)
+            .order("score", desc=True)
+            .order("finished_at", desc=False)
+            .limit(1)
+            .execute()
+        )
+        rows = best.data or []
+        if rows:
+            supabase.table("minigame_scores").update({"is_best_for_day": True}).eq(
+                "id", rows[0]["id"]
+            ).execute()
+    except Exception as e:
+        st.error(f"Set best-of-day failed: {e}")
+
+
+# Award yesterday once (on first visit of the day)
+def _run_daily_awards_if_needed():
+    if not supabase:
+        return
+    ykey = _yesterday_key_utc()
+    try:
+        done = (
+            supabase.table("minigame_daily_awards")
+            .select("id")
+            .eq("date_key", ykey)
+            .limit(1)
+            .execute()
+        )
+        if done.data or []:
+            return  # already awarded
+        # best scores yesterday
+        rows = (
+            supabase.table("minigame_scores")
+            .select("player_id, score")
+            .eq("date_key", ykey)
+            .eq("is_best_for_day", True)
+            .order("score", desc=True)
+            .execute()
+            .data
+            or []
+        )
+        if not rows:
+            return
+        # rank & buckets
+        # Top1 → BOX_GOLD or V_PICK_NEXT_GAME (20% chance)
+        # 2–3 → BOX_SILVER
+        # Top 10% (min 10) → BOX_BRONZE
+        n = len(rows)
+        top1 = rows[0:1]
+        top23 = rows[1:3]
+        topk = max(10, int(np.ceil(0.10 * n)))
+        top10p = rows[:topk]
+
+        # award helper
+        def _aw(player_id: str, code: str, placement: Optional[int]):
+            supabase.table("minigame_daily_awards").insert(
+                {
+                    "date_key": ykey,
+                    "player_id": player_id,
+                    "placement": placement,
+                    "reward_code": code,
+                }
+            ).execute()
+            _bag_add(player_id, code, 1)
+
+        # top1
+        import random
+
+        for i, r in enumerate(top1):
+            code = "V_PICK_NEXT_GAME" if random.random() < 0.20 else "BOX_GOLD"
+            _aw(r["player_id"], code, 1)
+        # 2–3
+        for idx, r in enumerate(top23, start=2):
+            _aw(r["player_id"], "BOX_SILVER", idx)
+        # top10%/top10
+        for r in top10p:
+            _aw(r["player_id"], "BOX_BRONZE", None)
+        st.toast("Daily rewards granted for yesterday 🎁")
+    except Exception as e:
+        st.warning(f"Daily award check failed (non-blocking): {e}")
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Defaults & Config Helpers
@@ -795,6 +1107,220 @@ def _range_to_df_tz(series: pd.Series, start_d, end_d):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Daily mini-game: Odd Emoji Out (OEO)
+# ─────────────────────────────────────────────────────────────────────────────
+
+OEO_PAIRS = [
+    ("🍎", "🍏"),
+    ("😃", "😄"),
+    ("😺", "😸"),
+    ("🐶", "🐺"),
+    ("🐻", "🐻‍❄️"),
+    ("⭐", "✨"),
+    ("🟦", "🟩"),
+    ("🍋", "🍊"),
+    ("🌕", "🌖"),
+    ("💙", "💜"),
+]
+
+
+def _oeo_new_round_state(state: Dict[str, Any]):
+    # escalate difficulty with score
+    score = int(state.get("score", 0))
+    n = min(OEO_MAX_GRID, OEO_START_GRID + score // 2)
+    pair_idx = np.random.randint(0, len(OEO_PAIRS))
+    base, odd = OEO_PAIRS[pair_idx]
+    target_r = np.random.randint(0, n)
+    target_c = np.random.randint(0, n)
+    state.update(
+        {
+            "grid_n": n,
+            "pair": (
+                (base, odd) if np.random.rand() < 0.5 else (odd, base)
+            ),  # flip sometimes
+            "target": (int(target_r), int(target_c)),
+            "round_id": _uuid(),
+        }
+    )
+    return state
+
+
+def _oeo_finalize_and_save(state: Dict[str, Any], player_id: str):
+    if not supabase:
+        return
+    try:
+        date_key = _today_key_utc()
+        started_at = state.get("started_at")
+        finished_at = _utc_now()
+        score = int(state.get("score", 0))
+        rounds = int(state.get("rounds_played", 0))
+        supabase.table("minigame_scores").insert(
+            {
+                "date_key": date_key,
+                "player_id": player_id,
+                "score": score,
+                "rounds_played": rounds,
+                "duration_s": OEO_DURATION_S,
+                "started_at": started_at.isoformat() if started_at else None,
+                "finished_at": finished_at.isoformat(),
+                "is_best_for_day": False,
+                "meta": {"minigame": MINIGAME_NAME},
+            }
+        ).execute()
+        _set_best_of_day(date_key, player_id)
+    except Exception as e:
+        st.error(f"Failed to save score: {e}")
+
+
+def render_daily_game():
+    st.header("🎮 Daily Mini-Game — Odd Emoji Out")
+    _run_daily_awards_if_needed()  # award yesterday (idempotent)
+
+    players_df = sb_select("players")
+
+    # Login gate
+    pid = _login_gate(players_df, key_prefix="oeo")
+    if not pid:
+        st.info("Login to play.")
+        return
+
+    # Show personal best today
+    today_key = _today_key_utc()
+    best_today = 0
+    try:
+        if supabase:
+            r = (
+                supabase.table("minigame_scores")
+                .select("score")
+                .eq("date_key", today_key)
+                .eq("player_id", pid)
+                .eq("is_best_for_day", True)
+                .order("score", desc=True)
+                .limit(1)
+                .execute()
+            )
+            rows = r.data or []
+            if rows:
+                best_today = int(rows[0]["score"])
+    except Exception:
+        pass
+
+    c_head = st.container()
+    with c_head:
+        colA, colB, colC = st.columns([2, 1, 1])
+        colA.subheader(f"Hi, {players_df.set_index('id').loc[pid, 'name']}!")
+        colB.metric("Best today", best_today)
+        colC.metric("Resets (UTC)", f"{DAY_ROLLOVER_HOUR_UTC:02d}:00")
+
+    # Load font cosmetic for header
+    bag = _get_player_bag(pid)
+    equipped_font = bag.get("cosmetics", {}).get("equipped", {}).get("font")
+    _inject_font_css(equipped_font)
+
+    # Run state
+    state = st.session_state.setdefault("oeo_state", {})
+    running = bool(state.get("running", False))
+    cooldown_until = state.get("cooldown_until")
+
+    # start button (with concurrency lock: 70s after last start)
+    now = _utc_now()
+    locked = bool(cooldown_until and now < cooldown_until)
+    if not running:
+        st.markdown("Find the **one** odd emoji in the grid. You have **60 seconds**.")
+        st.caption("Tip: difficulty ramps up as you score more.")
+        if locked:
+            remain = int((cooldown_until - now).total_seconds())
+            st.warning(f"Please wait {remain}s before starting another run.")
+        if st.button("▶️ Start 60-second run", disabled=locked):
+            state.clear()
+            state.update(
+                {
+                    "running": True,
+                    "score": 0,
+                    "rounds_played": 0,
+                    "started_at": _utc_now(),
+                    "cooldown_until": _utc_now() + timedelta(seconds=70),
+                }
+            )
+            _oeo_new_round_state(state)
+            st.experimental_rerun()
+        st.divider()
+    else:
+        # Running UI
+        started_at = state.get("started_at", _utc_now())
+        time_left = OEO_DURATION_S - int((_utc_now() - started_at).total_seconds())
+        if time_left <= 0:
+            # time up
+            state["running"] = False
+            _oeo_finalize_and_save(state, pid)
+            st.success(f"Time! Final score: {state.get('score', 0)}")
+            st.balloons()
+        else:
+            # Header bar with countdown + score
+            b1, b2 = st.columns([1, 1])
+            b1.subheader(f"⏳ {time_left}s left")
+            b2.subheader(f"🏅 Score: {state.get('score',0)}")
+
+            n = state.get("grid_n", OEO_START_GRID)
+            base, odd = state.get("pair", ("🍎", "🍏"))
+            tr, tc = state.get("target", (0, 0))
+            rid = state.get("round_id")
+
+            # draw grid of buttons
+            clicked = None
+            for r in range(n):
+                cols = st.columns(n)
+                for c in range(n):
+                    is_target = r == tr and c == tc
+                    em = odd if is_target else base
+                    if cols[c].button(em, key=f"oeo_btn_{rid}_{r}_{c}"):
+                        clicked = (r, c)
+
+            # handle click
+            if clicked is not None:
+                state["rounds_played"] = int(state.get("rounds_played", 0)) + 1
+                if clicked == (tr, tc):
+                    state["score"] = int(state.get("score", 0)) + 1
+                _oeo_new_round_state(state)
+                st.experimental_rerun()
+
+    # Daily leaderboard (best of day)
+    st.subheader("🏆 Today’s Leaderboard")
+    try:
+        if supabase:
+            best_rows = (
+                supabase.table("minigame_scores")
+                .select("player_id, score")
+                .eq("date_key", today_key)
+                .eq("is_best_for_day", True)
+                .order("score", desc=True)
+                .limit(100)
+                .execute()
+                .data
+                or []
+            )
+            if best_rows:
+                df = pd.DataFrame(best_rows)
+                names = sb_select("players")[["id", "name"]]
+                df = df.merge(
+                    names.rename(columns={"id": "player_id"}),
+                    on="player_id",
+                    how="left",
+                )
+                df = df.rename(columns={"name": "Player", "score": "Score"})
+                df.insert(0, "#", np.arange(1, len(df) + 1))
+                st.dataframe(
+                    df[["#", "Player", "Score"]],
+                    use_container_width=True,
+                    hide_index=True,
+                )
+            else:
+                st.info("No scores yet today.")
+    except Exception as e:
+        st.error(f"Leaderboard failed: {e}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Sidebar
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -822,349 +1348,426 @@ with st.sidebar:
 
 if mode == "General":
     st.title("🏆 Game Night Leaderboard")
+    tabs_general = st.tabs(["Leaderboard", "Daily Game", "Profiles"])
+    with tabs_general[0]:
+        st.title("🏆 Game Night Leaderboard")
+        joined = sb_select_sessions_joined()
+        games_df = sb_select("games")
 
-    joined = sb_select_sessions_joined()
-    games_df = sb_select("games")  # for single-game info/BGG card
-
-    if joined.empty:
-        st.info("No session data yet. Add sessions from the Admin tab.")
-    else:
-        cfg = load_config()  # use admin settings
-
-        # ---- Filters (General) ----
-        c1, c2 = st.columns([2, 1])
-        game_names = sorted(joined["game_name"].dropna().unique().tolist())
-
-        # Use a stable key + initialize session state BEFORE creating the widget
-        ms_key = "game_filter"
-        if ms_key not in st.session_state:
-            st.session_state[ms_key] = game_names[:]  # start with all games selected
-
-        # Multiselect bound to session_state; no `default` needed when `key` is used
-        selected_games = c1.multiselect(
-            "Filter by game",
-            options=game_names,
-            key=ms_key,
-        )
-
-        # Quick actions — update state via callbacks
-        bcol1, bcol2 = c1.columns(2)
-        bcol1.button(
-            "All games",
-            key="btn_all_games",
-            use_container_width=True,
-            on_click=lambda: st.session_state.update({ms_key: game_names[:]}),
-        )
-        bcol2.button(
-            "Clear",
-            key="btn_clear_games",
-            use_container_width=True,
-            on_click=lambda: st.session_state.update({ms_key: []}),
-        )
-
-        # Date range fallback: use today if no valid dates
-        min_date = joined["played_at"].dt.date.min()
-        max_date = joined["played_at"].dt.date.max()
-        if not min_date or not max_date or pd.isna(min_date) or pd.isna(max_date):
-            min_date = date.today()
-            max_date = date.today()
-        start_date, end_date = c2.date_input("Date range", value=(min_date, max_date))
-
-        # If exactly one game is selected, show a polished info card (+ BGG link if provided)
-        if len(selected_games) == 1:
-            gname = selected_games[0]
-            grow = (
-                games_df.loc[games_df["name"] == gname].to_dict("records")[0]
-                if not games_df.empty and (games_df["name"] == gname).any()
-                else {}
-            )
-            bgg_slug = (grow.get("bgg_slug") or "").strip()
-            minp = grow.get("min_players", None)
-            maxp = grow.get("max_players", None)
-            notes = grow.get("notes", "")
-
-            # Stats for current filter range
-            start_dt, end_dt = _range_to_df_tz(
-                joined["played_at"], start_date, end_date
-            )
-            filt = joined[
-                (joined["game_name"] == gname)
-                & (joined["played_at"].between(start_dt, end_dt))
-            ]
-            sessions_count = filt["session_id"].nunique()
-            unique_players = filt["player_id"].nunique()
-            avg_table = (
-                (filt.groupby("session_id")["player_id"].nunique().mean())
-                if not filt.empty
-                else np.nan
-            )
-
-            colA, colB = st.columns([3, 2])
-            with colA:
-                st.markdown(f"### 🎲 {gname}")
-                if minp or maxp:
-                    st.caption(
-                        f"Players: {int(minp) if pd.notna(minp) else '?'}–{int(maxp) if pd.notna(maxp) else '?'}"
-                    )
-                if notes:
-                    st.write(notes)
-                if bgg_slug:
-                    st.markdown(
-                        f"[View on BoardGameGeek](https://boardgamegeek.com/boardgame/{bgg_slug})"
-                    )
-            with colB:
-                m1, m2, m3 = st.columns(3)
-                m1.metric("Sessions", sessions_count)
-                m2.metric("Unique players", unique_players)
-                m3.metric(
-                    "Avg table size",
-                    f"{avg_table:.1f}" if pd.notna(avg_table) else "—",
-                )
-            st.divider()
-
-        lb, h2h, recent, ratings_over_time = compute_leaderboard(
-            joined,
-            selected_games,
-            (start_date, end_date),
-            base_rating=float(cfg["starting_elo"]),
-            k_ffa_base=float(cfg["k_ffa_base"]),
-            k_team=float(cfg["k_team"]),
-            coop_drift=float(cfg["coop_drift"]),
-            solo_drift=float(cfg["solo_drift"]),
-            use_points_weight=bool(cfg["use_points_weight"]),
-            points_alpha=float(cfg["points_alpha"]),
-            gap_bonus=bool(cfg["gap_bonus"]),
-            gap_bonus_coeff=float(cfg["gap_bonus_coeff"]),
-            exceptional_bonus=bool(cfg["exceptional_bonus"]),
-            exceptional_threshold=float(cfg["exceptional_threshold"]),
-            exceptional_points=float(cfg["exceptional_points"]),
-        )
-
-        if lb.empty:
-            st.info("No data for current filters.")
+        if joined.empty:
+            st.info("No session data yet. Add sessions from the Admin tab.")
         else:
-            # KPI
-            k1, k2, k3, k4 = st.columns(4)
-            start_dt, end_dt = _range_to_df_tz(
-                joined["played_at"], start_date, end_date
-            )
-            total_sessions = joined[
-                (joined["game_name"].isin(selected_games))
-                & (joined["played_at"].between(start_dt, end_dt))
-            ]["session_id"].nunique()
-            total_players = lb.shape[0]
-            total_games = len(selected_games)
-            last_play = joined["played_at"].max()
-            k1.metric("Sessions", total_sessions)
-            k2.metric("Players", total_players)
-            k3.metric("Games", total_games)
-            k4.metric(
-                "Last played",
-                last_play.strftime("%Y-%m-%d") if pd.notna(last_play) else "—",
+            cfg = load_config()
+            # (Everything from you
+
+            # ---- Filters (General) ----
+            c1, c2 = st.columns([2, 1])
+            game_names = sorted(joined["game_name"].dropna().unique().tolist())
+
+            # Use a stable key + initialize session state BEFORE creating the widget
+            ms_key = "game_filter"
+            if ms_key not in st.session_state:
+                st.session_state[ms_key] = game_names[
+                    :
+                ]  # start with all games selected
+
+            # Multiselect bound to session_state; no `default` needed when `key` is used
+            selected_games = c1.multiselect(
+                "Filter by game",
+                options=game_names,
+                key=ms_key,
             )
 
-            # ── Highlights strip ─────────────────────────────────────────────
-            champ = lb.loc[lb["elo"].idxmax()] if not lb.empty else None
-            longest = lb.loc[lb["best_streak"].idxmax()] if not lb.empty else None
-            eligible = lb[lb["games_played"] >= 3]
-            best_wr = (
-                eligible.loc[eligible["win_rate"].idxmax()]
-                if not eligible.empty
-                else None
+            # Quick actions — update state via callbacks
+            bcol1, bcol2 = c1.columns(2)
+            bcol1.button(
+                "All games",
+                key="btn_all_games",
+                use_container_width=True,
+                on_click=lambda: st.session_state.update({ms_key: game_names[:]}),
             )
-            most_active = lb.loc[lb["games_played"].idxmax()] if not lb.empty else None
+            bcol2.button(
+                "Clear",
+                key="btn_clear_games",
+                use_container_width=True,
+                on_click=lambda: st.session_state.update({ms_key: []}),
+            )
 
-            cA, cB, cC, cD = st.columns(4)
+            # Date range fallback: use today if no valid dates
+            min_date = joined["played_at"].dt.date.min()
+            max_date = joined["played_at"].dt.date.max()
+            if not min_date or not max_date or pd.isna(min_date) or pd.isna(max_date):
+                min_date = date.today()
+                max_date = date.today()
+            start_date, end_date = c2.date_input(
+                "Date range", value=(min_date, max_date)
+            )
 
-            def metric_card(title, value, delta, color="green"):
-                display_value = value if value else "—"
-                display_delta = delta if delta else ""
+            # If exactly one game is selected, show a polished info card (+ BGG link if provided)
+            if len(selected_games) == 1:
+                gname = selected_games[0]
+                grow = (
+                    games_df.loc[games_df["name"] == gname].to_dict("records")[0]
+                    if not games_df.empty and (games_df["name"] == gname).any()
+                    else {}
+                )
+                bgg_slug = (grow.get("bgg_slug") or "").strip()
+                minp = grow.get("min_players", None)
+                maxp = grow.get("max_players", None)
+                notes = grow.get("notes", "")
+
+                # Stats for current filter range
+                start_dt, end_dt = _range_to_df_tz(
+                    joined["played_at"], start_date, end_date
+                )
+                filt = joined[
+                    (joined["game_name"] == gname)
+                    & (joined["played_at"].between(start_dt, end_dt))
+                ]
+                sessions_count = filt["session_id"].nunique()
+                unique_players = filt["player_id"].nunique()
+                avg_table = (
+                    (filt.groupby("session_id")["player_id"].nunique().mean())
+                    if not filt.empty
+                    else np.nan
+                )
+
+                colA, colB = st.columns([3, 2])
+                with colA:
+                    st.markdown(f"### 🎲 {gname}")
+                    if minp or maxp:
+                        st.caption(
+                            f"Players: {int(minp) if pd.notna(minp) else '?'}–{int(maxp) if pd.notna(maxp) else '?'}"
+                        )
+                    if notes:
+                        st.write(notes)
+                    if bgg_slug:
+                        st.markdown(
+                            f"[View on BoardGameGeek](https://boardgamegeek.com/boardgame/{bgg_slug})"
+                        )
+                with colB:
+                    m1, m2, m3 = st.columns(3)
+                    m1.metric("Sessions", sessions_count)
+                    m2.metric("Unique players", unique_players)
+                    m3.metric(
+                        "Avg table size",
+                        f"{avg_table:.1f}" if pd.notna(avg_table) else "—",
+                    )
+                st.divider()
+
+            lb, h2h, recent, ratings_over_time = compute_leaderboard(
+                joined,
+                selected_games,
+                (start_date, end_date),
+                base_rating=float(cfg["starting_elo"]),
+                k_ffa_base=float(cfg["k_ffa_base"]),
+                k_team=float(cfg["k_team"]),
+                coop_drift=float(cfg["coop_drift"]),
+                solo_drift=float(cfg["solo_drift"]),
+                use_points_weight=bool(cfg["use_points_weight"]),
+                points_alpha=float(cfg["points_alpha"]),
+                gap_bonus=bool(cfg["gap_bonus"]),
+                gap_bonus_coeff=float(cfg["gap_bonus_coeff"]),
+                exceptional_bonus=bool(cfg["exceptional_bonus"]),
+                exceptional_threshold=float(cfg["exceptional_threshold"]),
+                exceptional_points=float(cfg["exceptional_points"]),
+            )
+
+            if lb.empty:
+                st.info("No data for current filters.")
+            else:
+                # KPI
+                k1, k2, k3, k4 = st.columns(4)
+                start_dt, end_dt = _range_to_df_tz(
+                    joined["played_at"], start_date, end_date
+                )
+                total_sessions = joined[
+                    (joined["game_name"].isin(selected_games))
+                    & (joined["played_at"].between(start_dt, end_dt))
+                ]["session_id"].nunique()
+                total_players = lb.shape[0]
+                total_games = len(selected_games)
+                last_play = joined["played_at"].max()
+                k1.metric("Sessions", total_sessions)
+                k2.metric("Players", total_players)
+                k3.metric("Games", total_games)
+                k4.metric(
+                    "Last played",
+                    last_play.strftime("%Y-%m-%d") if pd.notna(last_play) else "—",
+                )
+
+                # ── Highlights strip ─────────────────────────────────────────────
+                champ = lb.loc[lb["elo"].idxmax()] if not lb.empty else None
+                longest = lb.loc[lb["best_streak"].idxmax()] if not lb.empty else None
+                eligible = lb[lb["games_played"] >= 3]
+                best_wr = (
+                    eligible.loc[eligible["win_rate"].idxmax()]
+                    if not eligible.empty
+                    else None
+                )
+                most_active = (
+                    lb.loc[lb["games_played"].idxmax()] if not lb.empty else None
+                )
+
+                cA, cB, cC, cD = st.columns(4)
+
+                def metric_card(title, value, delta, color="green"):
+                    display_value = value if value else "—"
+                    display_delta = delta if delta else ""
+                    st.markdown(
+                        f"""
+                        <div style="text-align:center; padding:0.5em; border-radius:8px; background-color:rgba(240,240,240,0.5);">
+                            <div style="font-size:0.9em; font-weight:bold;">{title}</div>
+                            <div style="font-size:1.1em; white-space:normal; word-break:break-word;">{display_value}</div>
+                            <div style="color:{color}; font-size:0.85em;">{display_delta}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+                with cA:
+                    metric_card(
+                        "🏆 Champion",
+                        champ["display_name"] if champ is not None else None,
+                        f"ELO {champ['elo']:.0f}" if champ is not None else None,
+                    )
+
+                with cB:
+                    metric_card(
+                        "🔥 Longest Streak",
+                        longest["display_name"] if longest is not None else None,
+                        (
+                            f"{int(longest['best_streak'])} wins"
+                            if longest is not None
+                            else None
+                        ),
+                    )
+
+                with cC:
+                    metric_card(
+                        "🎯 Best Win% (≥3 GP)",
+                        best_wr["display_name"] if best_wr is not None else None,
+                        (
+                            f"{best_wr['win_rate']*100:.0f}%"
+                            if best_wr is not None
+                            else None
+                        ),
+                    )
+
+                with cD:
+                    metric_card(
+                        "👥 Most Active",
+                        (
+                            most_active["display_name"]
+                            if most_active is not None
+                            else None
+                        ),
+                        (
+                            f"{int(most_active['games_played'])} GP"
+                            if most_active is not None
+                            else None
+                        ),
+                    )
+
+                # ── Sexy Leaderboard: rank, medals, win% progress, streak flair ──
+                lb_disp = lb.copy()  # lb is already ELO-sorted from compute_leaderboard
+                lb_disp.insert(0, "#", np.arange(1, len(lb_disp) + 1))
+                medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+                lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
+                lb_disp["🔥"] = np.where(lb_disp["current_streak"] >= 3, "🔥", "")
+                lb_disp["Win%"] = lb_disp["win_rate"] * 100.0
+
+                show_cols = [
+                    "#",
+                    "🏅",
+                    "display_name",
+                    "elo",
+                    "wins",
+                    "games_played",
+                    "Win%",
+                    "avg_position",
+                    "avg_points",
+                    "current_streak",
+                    "best_streak",
+                    "last_played",
+                    "🔥",
+                ]
+
+                st.subheader("Leaderboard")
+                st.dataframe(
+                    lb_disp[show_cols].rename(
+                        columns={
+                            "display_name": "Player",
+                            "games_played": "GP",
+                            "wins": "W",
+                            "avg_position": "Avg Pos",
+                            "avg_points": "Avg Pts",
+                            "current_streak": "Streak",
+                            "best_streak": "Best Streak",
+                            "elo": "ELO",
+                            "last_played": "Last",
+                        }
+                    ),
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "#": st.column_config.NumberColumn(width="small"),
+                        "🏅": st.column_config.TextColumn(width="small", help="Top 3"),
+                        "Player": st.column_config.TextColumn(width="large"),
+                        "ELO": st.column_config.NumberColumn(
+                            format="%.0f", help="Higher is better"
+                        ),
+                        "W": st.column_config.NumberColumn(width="small"),
+                        "GP": st.column_config.NumberColumn(width="small"),
+                        "Win%": st.column_config.ProgressColumn(
+                            "Win%",
+                            help="Wins / Games Played",
+                            format="%.0f%%",
+                            min_value=0.0,
+                            max_value=100.0,
+                        ),
+                        "Avg Pos": st.column_config.NumberColumn(format="%.2f"),
+                        "Avg Pts": st.column_config.NumberColumn(format="%.2f"),
+                        "Streak": st.column_config.NumberColumn(
+                            width="small", help="Current winning streak"
+                        ),
+                        "Best Streak": st.column_config.NumberColumn(width="small"),
+                        "Last": st.column_config.DatetimeColumn(
+                            format="YYYY-MM-DD HH:mm"
+                        ),
+                        "🔥": st.column_config.TextColumn(
+                            width="small", help="Hot streak (3+ wins)"
+                        ),
+                    },
+                )
+
+                # ── Rating history chart ────────────────────────────────────────
+                st.subheader("📈 Player Rating Over Time")
+
+                # Choose players (defaults to top 3 by current ELO)
+                player_opts = lb["display_name"].tolist()
+                default_sel = player_opts[:3]
+                selected_players_rt = st.multiselect(
+                    "Select players",
+                    options=player_opts,
+                    default=default_sel,
+                )
+
+                if selected_players_rt and not ratings_over_time.empty:
+                    plot_df = ratings_over_time[
+                        ratings_over_time["player_name"].isin(selected_players_rt)
+                    ]
+                    if not plot_df.empty:
+                        # make sure it's sorted for nice lines
+                        plot_df = plot_df.sort_values(["player_name", "played_at"])
+
+                        fig = go.Figure()
+                        for pname, grp in plot_df.groupby("player_name", sort=False):
+                            fig.add_trace(
+                                go.Scatter(
+                                    x=grp["played_at"],
+                                    y=grp["elo"],
+                                    mode="lines+markers",
+                                    name=pname,
+                                    hovertemplate="<b>%{text}</b><br>%{x|%Y-%m-%d %H:%M}<br>ELO: %{y:.0f}<extra></extra>",
+                                    text=[pname] * len(grp),
+                                )
+                            )
+                        fig.update_layout(
+                            title="ELO progression (respects current filters)",
+                            xaxis_title="Date",
+                            yaxis_title="ELO",
+                            hovermode="x unified",
+                            margin=dict(l=0, r=0, t=60, b=0),
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.info("No data for selected players in current filters.")
+                else:
+                    st.caption("Pick one or more players to see their rating history.")
+
+                st.subheader("Head-to-Head (times row finished ahead of column)")
+                render_h2h_heatmap(
+                    h2h, title="Head-to-Head (row finished ahead of column)"
+                )
+
+                st.subheader("Recent Sessions")
+                rename_map = {
+                    "played_at": "Date",
+                    "game_name": "Game",
+                    "location": "Location",
+                    "notes": "Notes",
+                    "winners": "Winners",
+                }
+                st.dataframe(
+                    recent.rename(columns=rename_map),
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Date": st.column_config.DatetimeColumn(
+                            format="YYYY-MM-DD HH:mm"
+                        )
+                    },
+                )
+
+                st.download_button(
+                    "Download leaderboard (CSV)",
+                    data=lb.to_csv(index=False).encode("utf-8"),
+                    file_name="leaderboard.csv",
+                )
+        # ===== TAB 2: Daily Game =====
+    with tabs_general[1]:
+        render_daily_game()
+
+        # ===== TAB 3: Profiles (read-only inspection) =====
+    with tabs_general[2]:
+        st.title("👤 Player Profiles")
+        players_df = sb_select("players")
+        if players_df.empty:
+            st.info("No players yet.")
+        else:
+            pmap = dict(zip(players_df["name"], players_df["id"]))
+            selected_name = st.selectbox("Select a player", options=sorted(pmap.keys()))
+            pid = pmap[selected_name]
+            bag = _get_player_bag(pid)
+            owned = bag.get("cosmetics", {}).get("owned", [])
+            eq = bag.get("cosmetics", {}).get("equipped", {})
+            inv = bag.get("inventory", {})
+
+            # font preview
+            equipped_font = eq.get("font")
+            _inject_font_css(equipped_font)
+
+            cA, cB = st.columns([2, 1])
+            with cA:
                 st.markdown(
                     f"""
-                    <div style="text-align:center; padding:0.5em; border-radius:8px; background-color:rgba(240,240,240,0.5);">
-                        <div style="font-size:0.9em; font-weight:bold;">{title}</div>
-                        <div style="font-size:1.1em; white-space:normal; word-break:break-word;">{display_value}</div>
-                        <div style="color:{color}; font-size:0.85em;">{display_delta}</div>
+                    <div class="player-nameplate" style="
+                        padding: 12px 16px; border-radius: 10px;
+                        background: rgba(240,240,240,0.6);
+                        border: 2px solid #ddd; display:inline-block;">
+                        <div style="font-size: 20px; font-weight: 700;">{selected_name}</div>
+                        <div style="font-size: 13px; opacity: 0.8;">Badge: {eq.get('badge','—')} • Title: {eq.get('title','—')}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
-
-            with cA:
-                metric_card(
-                    "🏆 Champion",
-                    champ["display_name"] if champ is not None else None,
-                    f"ELO {champ['elo']:.0f}" if champ is not None else None,
-                )
-
+                st.write("")
+                st.markdown("**Equipped**")
+                st.write(eq or "—")
+                st.markdown("**Owned cosmetics**")
+                st.write(owned or "—")
             with cB:
-                metric_card(
-                    "🔥 Longest Streak",
-                    longest["display_name"] if longest is not None else None,
-                    (
-                        f"{int(longest['best_streak'])} wins"
-                        if longest is not None
-                        else None
-                    ),
-                )
-
-            with cC:
-                metric_card(
-                    "🎯 Best Win% (≥3 GP)",
-                    best_wr["display_name"] if best_wr is not None else None,
-                    f"{best_wr['win_rate']*100:.0f}%" if best_wr is not None else None,
-                )
-
-            with cD:
-                metric_card(
-                    "👥 Most Active",
-                    most_active["display_name"] if most_active is not None else None,
-                    (
-                        f"{int(most_active['games_played'])} GP"
-                        if most_active is not None
-                        else None
-                    ),
-                )
-
-            # ── Sexy Leaderboard: rank, medals, win% progress, streak flair ──
-            lb_disp = lb.copy()  # lb is already ELO-sorted from compute_leaderboard
-            lb_disp.insert(0, "#", np.arange(1, len(lb_disp) + 1))
-            medals = {1: "🥇", 2: "🥈", 3: "🥉"}
-            lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
-            lb_disp["🔥"] = np.where(lb_disp["current_streak"] >= 3, "🔥", "")
-            lb_disp["Win%"] = lb_disp["win_rate"] * 100.0
-
-            show_cols = [
-                "#",
-                "🏅",
-                "display_name",
-                "elo",
-                "wins",
-                "games_played",
-                "Win%",
-                "avg_position",
-                "avg_points",
-                "current_streak",
-                "best_streak",
-                "last_played",
-                "🔥",
-            ]
-
-            st.subheader("Leaderboard")
-            st.dataframe(
-                lb_disp[show_cols].rename(
-                    columns={
-                        "display_name": "Player",
-                        "games_played": "GP",
-                        "wins": "W",
-                        "avg_position": "Avg Pos",
-                        "avg_points": "Avg Pts",
-                        "current_streak": "Streak",
-                        "best_streak": "Best Streak",
-                        "elo": "ELO",
-                        "last_played": "Last",
-                    }
-                ),
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "#": st.column_config.NumberColumn(width="small"),
-                    "🏅": st.column_config.TextColumn(width="small", help="Top 3"),
-                    "Player": st.column_config.TextColumn(width="large"),
-                    "ELO": st.column_config.NumberColumn(
-                        format="%.0f", help="Higher is better"
-                    ),
-                    "W": st.column_config.NumberColumn(width="small"),
-                    "GP": st.column_config.NumberColumn(width="small"),
-                    "Win%": st.column_config.ProgressColumn(
-                        "Win%",
-                        help="Wins / Games Played",
-                        format="%.0f%%",
-                        min_value=0.0,
-                        max_value=100.0,
-                    ),
-                    "Avg Pos": st.column_config.NumberColumn(format="%.2f"),
-                    "Avg Pts": st.column_config.NumberColumn(format="%.2f"),
-                    "Streak": st.column_config.NumberColumn(
-                        width="small", help="Current winning streak"
-                    ),
-                    "Best Streak": st.column_config.NumberColumn(width="small"),
-                    "Last": st.column_config.DatetimeColumn(format="YYYY-MM-DD HH:mm"),
-                    "🔥": st.column_config.TextColumn(
-                        width="small", help="Hot streak (3+ wins)"
-                    ),
-                },
-            )
-
-            # ── Rating history chart ────────────────────────────────────────
-            st.subheader("📈 Player Rating Over Time")
-
-            # Choose players (defaults to top 3 by current ELO)
-            player_opts = lb["display_name"].tolist()
-            default_sel = player_opts[:3]
-            selected_players_rt = st.multiselect(
-                "Select players",
-                options=player_opts,
-                default=default_sel,
-            )
-
-            if selected_players_rt and not ratings_over_time.empty:
-                plot_df = ratings_over_time[
-                    ratings_over_time["player_name"].isin(selected_players_rt)
-                ]
-                if not plot_df.empty:
-                    # make sure it's sorted for nice lines
-                    plot_df = plot_df.sort_values(["player_name", "played_at"])
-
-                    fig = go.Figure()
-                    for pname, grp in plot_df.groupby("player_name", sort=False):
-                        fig.add_trace(
-                            go.Scatter(
-                                x=grp["played_at"],
-                                y=grp["elo"],
-                                mode="lines+markers",
-                                name=pname,
-                                hovertemplate="<b>%{text}</b><br>%{x|%Y-%m-%d %H:%M}<br>ELO: %{y:.0f}<extra></extra>",
-                                text=[pname] * len(grp),
-                            )
-                        )
-                    fig.update_layout(
-                        title="ELO progression (respects current filters)",
-                        xaxis_title="Date",
-                        yaxis_title="ELO",
-                        hovermode="x unified",
-                        margin=dict(l=0, r=0, t=60, b=0),
+                st.markdown("**Inventory** (boxes/items)")
+                if inv:
+                    inv_df = pd.DataFrame(
+                        [{"Item": k, "Qty": v} for k, v in inv.items()]
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.dataframe(inv_df, use_container_width=True, hide_index=True)
                 else:
-                    st.info("No data for selected players in current filters.")
-            else:
-                st.caption("Pick one or more players to see their rating history.")
-
-            st.subheader("Head-to-Head (times row finished ahead of column)")
-            render_h2h_heatmap(h2h, title="Head-to-Head (row finished ahead of column)")
-
-            st.subheader("Recent Sessions")
-            rename_map = {
-                "played_at": "Date",
-                "game_name": "Game",
-                "location": "Location",
-                "notes": "Notes",
-                "winners": "Winners",
-            }
-            st.dataframe(
-                recent.rename(columns=rename_map),
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "Date": st.column_config.DatetimeColumn(format="YYYY-MM-DD HH:mm")
-                },
-            )
-
-            st.download_button(
-                "Download leaderboard (CSV)",
-                data=lb.to_csv(index=False).encode("utf-8"),
-                file_name="leaderboard.csv",
+                    st.caption("Empty")
+            st.caption(
+                "Profiles here are view-only. Admins can edit in Admin ▸ Players."
             )
 
 
@@ -1705,11 +2308,106 @@ if mode == "Admin":
                 columns={"name": "Player", "nickname": "Nick"}
             )
             st.dataframe(view, use_container_width=True, hide_index=True)
+            # Light controls for PIN/emoji + cosmetics
+            if not players_df.empty:
+                st.markdown("### Manage players")
+                for _, prow in players_df.iterrows():
+                    with st.expander(f"⚙️ {prow.get('name','(unknown)')}"):
+                        pid = prow["id"]
+                        c1, c2, c3 = st.columns([1, 1, 2])
+                        # PIN / Emoji
+                        new_pin = c1.text_input(
+                            "PIN (4 digits)",
+                            value=str(prow.get("pin_code") or ""),
+                            max_chars=4,
+                            key=f"adm_pin_{pid}",
+                        )
+                        new_emo = c2.text_input(
+                            "Emoji lock",
+                            value=str(prow.get("emoji_lock") or ""),
+                            max_chars=2,
+                            key=f"adm_emo_{pid}",
+                        )
+                        if c3.button("Save login", key=f"adm_save_login_{pid}"):
+                            if sb_update_by_id(
+                                "players",
+                                pid,
+                                {"pin_code": new_pin, "emoji_lock": new_emo},
+                            ):
+                                st.success("Saved")
+                                st.cache_data.clear()
+
+                        # Quick grant (boxes / voucher)
+                        g1, g2, g3 = st.columns(3)
+                        grant_code = g1.selectbox(
+                            "Grant item",
+                            [
+                                "BOX_BRONZE",
+                                "BOX_SILVER",
+                                "BOX_GOLD",
+                                "V_PICK_NEXT_GAME",
+                            ],
+                            key=f"adm_grant_code_{pid}",
+                        )
+                        grant_qty = g2.number_input(
+                            "Qty",
+                            min_value=1,
+                            max_value=10,
+                            value=1,
+                            step=1,
+                            key=f"adm_grant_qty_{pid}",
+                        )
+                        if g3.button("Grant", key=f"adm_grant_btn_{pid}"):
+                            if _bag_add(pid, grant_code, int(grant_qty)):
+                                st.success("Granted")
+                            else:
+                                st.error("Grant failed")
+
+                        # Equip font cosmetic (if owned) or force-equip (admin)
+                        bag = _get_player_bag(pid)
+                        owned = bag.get("cosmetics", {}).get("owned", [])
+                        eq = bag.get("cosmetics", {}).get("equipped", {})
+                        font_choices = list(FONT_CATALOG.keys())
+                        sel_font = st.selectbox(
+                            "Equip font",
+                            font_choices,
+                            index=(
+                                font_choices.index(eq.get("font"))
+                                if eq.get("font") in font_choices
+                                else 0
+                            ),
+                            key=f"adm_font_sel_{pid}",
+                        )
+                        cols_fx = st.columns([1, 1])
+                        if cols_fx[0].button(
+                            "Equip (require owned)", key=f"adm_font_equip_{pid}"
+                        ):
+                            if sel_font in owned:
+                                _equip_cosmetic(pid, "font", sel_font)
+                                st.success("Equipped")
+                            else:
+                                st.warning("Player does not own this font cosmetic.")
+                        if cols_fx[1].button(
+                            "Force equip (admin)", key=f"adm_font_force_{pid}"
+                        ):
+                            # ensure it is listed as owned then equip
+                            bag = _get_player_bag(pid)
+                            bag["cosmetics"].setdefault("owned", [])
+                            if sel_font not in bag["cosmetics"]["owned"]:
+                                bag["cosmetics"]["owned"].append(sel_font)
+                                _save_player_bag(pid, bag)
+                            _equip_cosmetic(pid, "font", sel_font)
+                            st.success("Force equipped")
+
+                        st.caption(
+                            "Tip: fonts are also part of box rewards/crafting; here you can override as admin."
+                        )
         with st.form("add_player_form", clear_on_submit=True):
             st.markdown("**Add Player**")
             name = st.text_input("Name", "")
             nickname = st.text_input("Nickname (opt)", "")
             add_p = st.form_submit_button("Add player", type="primary")
+
         if add_p and name.strip():
             if sb_insert(
                 "players",
