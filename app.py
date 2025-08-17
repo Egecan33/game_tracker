@@ -393,26 +393,19 @@ def _set_awarded_flag_safe(puzzle_id: str, value: bool = True) -> None:
 
 
 def ensure_today_puzzle(games_df):
-    """
-    Minimal version:
-      - uses daily_puzzles(puzzle_date, game_id)
-      - DB generates id/created_at
-      - safe against duplicate inserts
-    """
     if games_df.empty:
         raise RuntimeError("No games available.")
     if not supabase:
         raise RuntimeError("Supabase client not initialized.")
 
-    # obey 03:00 UTC rollover you already use
+    date_col, game_col = _daily_puzzles_cols()
     _, _, pday = _window()
     day_str = pday.isoformat()
 
-    # already there?
     r = (
         supabase.table("daily_puzzles")
-        .select("id,game_id,puzzle_date")
-        .eq("puzzle_date", day_str)
+        .select(f"id,{game_col},{date_col}")
+        .eq(date_col, day_str)
         .limit(1)
         .execute()
         .data
@@ -420,27 +413,24 @@ def ensure_today_puzzle(games_df):
     )
     if r:
         row = r[0]
-        return row["id"], row["game_id"], pday
+        return row["id"], row[game_col], pday
 
-    # pick deterministic answer
+    # deterministic pick for the day
     ids = games_df["id"].tolist()
     idx = int(hashlib.md5(day_str.encode()).hexdigest(), 16) % len(ids)
     gid = ids[idx]
 
-    # try insert with just the two columns
     try:
         supabase.table("daily_puzzles").insert(
-            {"puzzle_date": day_str, "game_id": gid}
+            {date_col: day_str, game_col: gid}
         ).execute()
     except Exception:
-        # could be unique race; just fall through to re-read
-        pass
+        pass  # unique race; re-read below
 
-    # read back (works whether insert returned a body or not)
     r2 = (
         supabase.table("daily_puzzles")
-        .select("id,game_id,puzzle_date")
-        .eq("puzzle_date", day_str)
+        .select(f"id,{game_col},{date_col}")
+        .eq(date_col, day_str)
         .limit(1)
         .execute()
         .data
@@ -449,7 +439,7 @@ def ensure_today_puzzle(games_df):
     if not r2:
         raise RuntimeError("Could not create or read today's daily_puzzles row.")
     row = r2[0]
-    return row["id"], row["game_id"], pday
+    return row["id"], row[game_col], pday
 
 
 def get_or_create_run(puzzle_id: str, player_id: str) -> Dict[str, Any]:
@@ -751,32 +741,57 @@ def set_player_pin(player_id: str, new_pin: str) -> bool:
     return ok
 
 
-def ensure_daily_game_exists(date_key: str, games_df: pd.DataFrame) -> Optional[str]:
-    """Return game_id of the daily answer, creating a stable choice if missing."""
-    if not supabase or games_df.empty:
-        return None
+def ensure_today_puzzle(games_df):
+    if games_df.empty:
+        raise RuntimeError("No games available.")
+    if not supabase:
+        raise RuntimeError("Supabase client not initialized.")
+
+    date_col, game_col = _daily_puzzles_cols()
+    _, _, pday = _window()
+    day_str = pday.isoformat()
+
+    # 1) already there?
+    r = (
+        supabase.table("daily_puzzles")
+        .select(f"id,{game_col},{date_col}")
+        .eq(date_col, day_str)
+        .limit(1)
+        .execute()
+        .data
+        or []
+    )
+    if r:
+        row = r[0]
+        return row["id"], row[game_col], pday
+
+    # 2) deterministic pick and insert (with id!)
+    ids = games_df["id"].tolist()
+    idx = int(hashlib.md5(day_str.encode()).hexdigest(), 16) % len(ids)
+    gid = ids[idx]
+
     try:
-        # already chosen?
-        row = (
-            supabase.table("daily_game")
-            .select("*")
-            .eq("date_key", date_key)
-            .execute()
-            .data
-        )
-        if row:
-            return row[0]["game_id"]
-        # pick deterministically by hashing the day key (so it's stable even on cold start)
-        ids = games_df["id"].tolist()
-        idx = int(hashlib.md5(date_key.encode()).hexdigest(), 16) % len(ids)
-        game_id = ids[idx]
-        supabase.table("daily_game").insert(
-            {"date_key": date_key, "game_id": game_id}
+        supabase.table("daily_puzzles").insert(
+            {"id": _uuid(), date_col: day_str, game_col: gid}
         ).execute()
-        return game_id
     except Exception as e:
-        st.error(f"Failed to ensure daily game: {e}")
-        return None
+        # Don’t swallow this silently—show why creation failed
+        st.warning(f"Creating daily_puzzles row for {day_str} failed: {e}")
+
+    # 3) read back regardless (handles races/duplicates)
+    r2 = (
+        supabase.table("daily_puzzles")
+        .select(f"id,{game_col},{date_col}")
+        .eq(date_col, day_str)
+        .limit(1)
+        .execute()
+        .data
+        or []
+    )
+    if not r2:
+        raise RuntimeError("Could not create or read today's daily_puzzles row.")
+    row = r2[0]
+    return row["id"], row[game_col], pday
 
 
 def award_yesterday_if_needed():
