@@ -1243,7 +1243,7 @@ def render_daily_game():
                 }
             )
             _oeo_new_round_state(state)
-            st.experimental_rerun()
+            st.rerun()
         st.divider()
     else:
         # Running UI
@@ -1282,7 +1282,7 @@ def render_daily_game():
                 if clicked == (tr, tc):
                     state["score"] = int(state.get("score", 0)) + 1
                 _oeo_new_round_state(state)
-                st.experimental_rerun()
+                st.rerun()
 
     # Daily leaderboard (best of day)
     st.subheader("🏆 Today’s Leaderboard")
