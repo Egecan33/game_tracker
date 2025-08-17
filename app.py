@@ -23,6 +23,8 @@ import plotly.graph_objects as go  # for H2H heatmap
 
 load_dotenv()
 
+st.set_page_config(page_title="🎯 Game Sessions Tracker", page_icon="🏆", layout="wide")
+
 
 def _sec(key: str, default: str = "") -> str:
     """Prefer st.secrets over env if present."""
@@ -56,7 +58,6 @@ else:
         "Supabase credentials missing. Set SUPABASE_URL and SUPABASE_ANON_KEY."
     )
 
-st.set_page_config(page_title="🎯 Game Sessions Tracker", page_icon="🏆", layout="wide")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Defaults & Config Helpers
@@ -1697,13 +1698,13 @@ if mode == "Admin":
     with tabs[1]:
         st.subheader("Players")
         if not players_df.empty:
-            st.dataframe(
-                players_df[["name", "nickname", "joined_on"]].rename(
-                    columns={"name": "Player", "nickname": "Nick"}
-                ),
-                use_container_width=True,
-                hide_index=True,
+            cols = [
+                c for c in ["name", "nickname", "joined_on"] if c in players_df.columns
+            ]
+            view = players_df[cols].rename(
+                columns={"name": "Player", "nickname": "Nick"}
             )
+            st.dataframe(view, use_container_width=True, hide_index=True)
         with st.form("add_player_form", clear_on_submit=True):
             st.markdown("**Add Player**")
             name = st.text_input("Name", "")
