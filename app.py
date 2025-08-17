@@ -1747,7 +1747,7 @@ with st.sidebar:
 
 if mode == "General":
     st.title("🏆 Game Night Leaderboard")
-    tabs_general = st.tabs(["Leaderboard", "Daily Game", "Profiles"])
+    tabs_general = st.tabs(["Leaderboard", "Daily Game", "Profiles", "Locker"])
     with tabs_general[0]:
         joined = sb_select_sessions_joined()
         games_df = sb_select("games")
