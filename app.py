@@ -311,6 +311,31 @@ def sb_upsert(table: str, data: Dict[str, Any]) -> bool:
         return False
 
 
+# ── Daily Puzzles schema discovery (handles old/new column names) ─────────────
+@st.cache_data(ttl=60)
+def _daily_puzzles_cols() -> Tuple[str, str]:
+    """
+    Return (date_col, game_col) that actually exist on `daily_puzzles`.
+    Falls back to ('puzzle_date','game_id') but supports ('date_key','answer_game_id').
+    """
+    date_col, game_col = "puzzle_date", "game_id"
+    if not supabase:
+        return date_col, game_col
+
+    def _has(col: str) -> bool:
+        try:
+            supabase.table("daily_puzzles").select(col).limit(1).execute()
+            return True
+        except Exception:
+            return False
+
+    if not _has("puzzle_date") and _has("date_key"):
+        date_col = "date_key"
+    if not _has("game_id") and _has("answer_game_id"):
+        game_col = "answer_game_id"
+    return date_col, game_col
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # NEW: BoardGamDLE helpers
 # ─────────────────────────────────────────────────────────────────────────────
@@ -370,9 +395,8 @@ def _set_awarded_flag_safe(puzzle_id: str, value: bool = True) -> None:
 def ensure_today_puzzle(games_df: pd.DataFrame) -> Tuple[str, str, date]:
     """
     Return (puzzle_id, answer_game_id, puzzle_date).
-    Creates today's row deterministically if missing.
-    Works whether or not daily_puzzles has an 'awarded' column.
-    Avoids insert(...).select(...) which is unsupported in supabase-py.
+    - Works with either daily_puzzles.{puzzle_date|date_key} and {game_id|answer_game_id}
+    - Safe under concurrency (409 conflicts): re-reads after insert failure.
     """
     if games_df.empty:
         raise RuntimeError("No games available to choose a daily puzzle from.")
@@ -381,13 +405,14 @@ def ensure_today_puzzle(games_df: pd.DataFrame) -> Tuple[str, str, date]:
 
     _, _, pday = _window()
     day_str = pday.isoformat()
+    date_col, game_col = _daily_puzzles_cols()
 
-    # Try to read an existing row (only the fields we actually use)
+    # 1) Already there?
     try:
         existing = (
             supabase.table("daily_puzzles")
-            .select("id,game_id,puzzle_date")
-            .eq("puzzle_date", day_str)
+            .select(f"id,{game_col},{date_col}")
+            .eq(date_col, day_str)
             .limit(1)
             .execute()
             .data
@@ -395,36 +420,46 @@ def ensure_today_puzzle(games_df: pd.DataFrame) -> Tuple[str, str, date]:
         )
     except Exception:
         st.error(
-            "Could not read table `daily_puzzles` (does it exist, and does anon have SELECT?)."
+            f"Could not read `daily_puzzles` (does it exist, does anon have SELECT, and is column `{date_col}` correct?)."
         )
         raise
 
     if existing:
         row = existing[0]
-        return row["id"], row["game_id"], pday
+        return row["id"], row[game_col], pday
 
-    # Pick deterministically so it's stable on cold start
+    # 2) Choose deterministic answer and insert (handle conflicts gracefully)
     ids = games_df["id"].tolist()
     idx = int(hashlib.md5(day_str.encode()).hexdigest(), 16) % len(ids)
     gid = ids[idx]
     new_id = _uuid()
 
-    # Insert with explicit id; don't chain .select() (unsupported in supabase-py)
+    payload = {"id": new_id, date_col: day_str, game_col: gid}
+
     try:
-        supabase.table("daily_puzzles").insert(
-            {
-                "id": new_id,
-                "puzzle_date": day_str,  # DATE 'YYYY-MM-DD'
-                "game_id": gid,
-                # no 'awarded' field — compatible with both schemas
-            }
-        ).execute()
-        # We generated new_id, so we can safely return it without re-reading.
+        supabase.table("daily_puzzles").insert(payload).execute()
         return new_id, gid, pday
     except Exception:
+        # If it was a 409 unique violation race, the row exists now — re-read once.
+        try:
+            row2 = (
+                supabase.table("daily_puzzles")
+                .select(f"id,{game_col},{date_col}")
+                .eq(date_col, day_str)
+                .limit(1)
+                .execute()
+                .data
+                or []
+            )
+            if row2:
+                r = row2[0]
+                return r["id"], r[game_col], pday
+        except Exception:
+            pass
+
         st.error(
             "Could not insert into `daily_puzzles` "
-            "(does anon have INSERT? does the schema match columns?)."
+            "(permission, column mismatch, or constraint issue)."
         )
         raise
 
@@ -749,10 +784,11 @@ def award_yesterday_if_needed():
     _, _, y_date = _window(_utc_now() - pd.Timedelta(days=1))
     y_key = str(y_date)
 
+    date_col, game_col = _daily_puzzles_cols()
     dp = (
         supabase.table("daily_puzzles")
-        .select("id,puzzle_date,game_id")  # no 'awarded'
-        .eq("puzzle_date", y_key)
+        .select(f"id,{date_col},{game_col}")  # schema-agnostic
+        .eq(date_col, y_key)
         .limit(1)
         .execute()
         .data
@@ -1768,17 +1804,19 @@ if mode == "General":
             st.stop()
 
         # Show yesterday's answer if exists
+        date_col, game_col = _daily_puzzles_cols()
         prev = (
             supabase.table("daily_puzzles")
-            .select("*")
-            .eq("puzzle_date", str(y_date))
+            .select(f"id,{game_col},{date_col}")
+            .eq(date_col, str(y_date))
+            .limit(1)
             .execute()
             .data
             or []
         )
         prev_ans = None
         if prev:
-            gid = prev[0]["game_id"]
+            gid = prev[0][game_col]
             prev_ans = (
                 games_df.loc[games_df["id"] == gid, "name"].iloc[0]
                 if (games_df["id"] == gid).any()
