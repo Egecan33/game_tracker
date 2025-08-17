@@ -585,33 +585,6 @@ def _save_json_config(key: str, obj) -> bool:
         return False
 
 
-# Catalog for pretty names/icons
-ITEM_DB = {
-    # boxes (inventory)
-    "BOX_BRONZE": {"label": "Bronze Box", "icon": "📦"},
-    "BOX_SILVER": {"label": "Silver Box", "icon": "🎁"},
-    "BOX_GOLD": {"label": "Gold Box", "icon": "🗃️"},
-    # currency
-    "DUST": {"label": "Emoji Dust", "icon": "✨"},
-    # emoji items
-    "EMOJI_STAR": {"label": "Star", "icon": "⭐"},
-    "EMOJI_FIRE": {"label": "Fire", "icon": "🔥"},
-    "EMOJI_APPLE": {"label": "Apple", "icon": "🍎"},
-    "EMOJI_CROWN": {"label": "Crown", "icon": "👑"},
-    # voucher (inventory)
-    "V_PICK_NEXT_GAME": {"label": "Voucher: Pick Next Game", "icon": "🎟️"},
-    # cosmetics (owned list)
-    "font_arcade": {"label": "Font: Arcade", "icon": "🅰️"},
-    "font_clean": {"label": "Font: Clean", "icon": "🔡"},
-    "font_serif": {"label": "Font: Serif", "icon": "🔠"},
-    "font_hand": {"label": "Font: Handwritten", "icon": "✍️"},
-    "font_display": {"label": "Font: Display", "icon": "🆒"},
-    "badge_star": {"label": "Badge: Star", "icon": "🌟"},
-    "badge_crown": {"label": "Badge: Crown", "icon": "👑"},
-    "title_emoji_hunter": {"label": "Title: Emoji Hunter", "icon": "🏹"},
-    "title_box_breaker": {"label": "Title: Box Breaker", "icon": "📦"},
-}
-
 EMOJI_ITEM_POOL = ["EMOJI_STAR", "EMOJI_FIRE", "EMOJI_APPLE", "EMOJI_CROWN"]
 
 
@@ -647,40 +620,6 @@ def _bag_add_owned_cosmetic(pid: str, cos_code: str) -> bool:
     cos["owned"] = owned
     bag["cosmetics"] = cos
     return _save_player_bag(pid, bag)
-
-
-# Weighted drop-tables for boxes
-# Each entry: dict(type: 'inventory'|'cosmetic', code: str or list, weight: int, qty: (min,max)|int)
-BOX_TABLES = {
-    "BOX_BRONZE": [
-        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 65, "qty": (1, 3)},
-        {"type": "inventory", "code": "DUST", "weight": 20, "qty": (4, 8)},
-        {"type": "cosmetic", "code": "font_clean", "weight": 10, "qty": 1},
-        {"type": "cosmetic", "code": "font_serif", "weight": 5, "qty": 1},
-    ],
-    "BOX_SILVER": [
-        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 50, "qty": (2, 5)},
-        {"type": "inventory", "code": "DUST", "weight": 30, "qty": (10, 16)},
-        {
-            "type": "cosmetic",
-            "code": ["font_serif", "font_hand", "badge_star", "title_emoji_hunter"],
-            "weight": 15,
-            "qty": 1,
-        },
-        {"type": "cosmetic", "code": "font_arcade", "weight": 5, "qty": 1},
-    ],
-    "BOX_GOLD": [
-        {"type": "inventory", "code": "DUST", "weight": 35, "qty": (20, 28)},
-        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 35, "qty": (5, 8)},
-        {
-            "type": "cosmetic",
-            "code": ["font_arcade", "font_display", "badge_crown", "title_box_breaker"],
-            "weight": 20,
-            "qty": 1,
-        },
-        {"type": "inventory", "code": "V_PICK_NEXT_GAME", "weight": 10, "qty": 1},
-    ],
-}
 
 
 def _weighted_pick(entries: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -763,14 +702,6 @@ def _open_boxes(pid: str, box_code: str, n: int) -> List[Tuple[str, int, bool]]:
         results.append(_open_box_once(pid, box_code))
     _bag_spend(pid, box_code, int(n))  # spend after successful opens
     return results
-
-
-# Simple crafting recipes: { result_cosmetic: {cost_item: qty, ...} }
-CRAFT_RECIPES: Dict[str, Dict[str, int]] = {
-    "badge_star": {"EMOJI_STAR": 20},
-    "font_hand": {"DUST": 50},
-    "title_emoji_hunter": {"EMOJI_STAR": 10, "EMOJI_APPLE": 10},
-}
 
 
 def _can_craft(pid: str, cos_code: str) -> bool:
@@ -3419,7 +3350,8 @@ if mode == "Admin":
                             st.success("Saved edits.")
                             st.cache_data.clear()
 
-                    # Approve → insert into real tables then delete request
+                            # Approve → insert into real tables then delete request
+
                     def _approve_request(_payload):
                         sid = _uuid()
                         ok = sb_insert(
@@ -3434,6 +3366,7 @@ if mode == "Admin":
                         )
                         if not ok:
                             return False
+
                         all_ok = True
                         for e in _payload.get("entries", []):
                             row = {
@@ -3447,24 +3380,30 @@ if mode == "Admin":
                             }
                             if not sb_insert("session_players", row):
                                 all_ok = False
-                        if all_ok:
-                            sb_delete_by_id("session_requests", rid)
-                            st.success("Approved and posted session ✅")
-                            st.cache_data.clear()
-                        else:
-                            st.error(
-                                "Some participant rows failed. Request not deleted."
-                            )
-                        return all_ok
 
-                    if acol2.button("Approve ✅", key=f"ap_approve_{rid}"):
-                        # Use the edited version at the moment of click
-                        tmp_entries = []
+                        if all_ok:
+                            # Mark approved and remove request from inbox
+                            sb_update_by_id(
+                                "session_requests", rid, {"status": "approved"}
+                            )
+                            sb_delete_by_id("session_requests", rid)
+                            st.cache_data.clear()
+                            return True
+                        else:
+                            # Roll back the session shell if participants failed
+                            sb_delete_by_id("sessions", sid)
+                            return False
+
+                    # APPROVE (uses current UI state, no need to click "Save edits" first)
+                    if acol2.button("Approve", key=f"ap_approve_{rid}"):
+                        new_entries = []
                         for _, r in edited.iterrows():
                             pid = name_to_id.get(r["pname"])
-                            tmp_entries.append(
+                            if not pid:
+                                st.error(f"Unknown player: {r['pname']}")
+                                st.stop()
+                            new_entries.append(
                                 {
-                                    "pname": r["pname"],
                                     "player_id": pid,
                                     "team": (r.get("team") or ""),
                                     "position": (
@@ -3477,10 +3416,11 @@ if mode == "Admin":
                                         if pd.notna(r["points"])
                                         else None
                                     ),
-                                    "is_winner": bool(r["is_winner"]),
+                                    "is_winner": bool(r.get("is_winner", False)),
                                 }
                             )
-                        approve_payload = {
+
+                        payload_to_approve = {
                             "game_id": game_name_to_id.get(
                                 new_game_name, payload.get("game_id")
                             ),
@@ -3489,14 +3429,20 @@ if mode == "Admin":
                             ).isoformat(),
                             "location": new_loc.strip() or None,
                             "notes": new_notes.strip() or None,
-                            "entries": tmp_entries,
+                            "entries": new_entries,
                         }
-                        _approve_request(approve_payload)
 
-                    # Cancel = delete request
-                    if acol3.button("Cancel / Delete request 🗑️", key=f"ap_del_{rid}"):
-                        if sb_delete_by_id("session_requests", rid):
-                            st.warning("Request deleted.")
+                        if _approve_request(payload_to_approve):
+                            st.success("Approved – session created.")
+                        else:
+                            st.error("Approve failed; nothing saved.")
+
+                    # REJECT
+                    if acol3.button("Reject", key=f"ap_reject_{rid}"):
+                        if sb_update_by_id(
+                            "session_requests", rid, {"status": "rejected"}
+                        ):
+                            st.warning("Request rejected.")
                             st.cache_data.clear()
 
     # ------------------------- Economy / Bag Management -------------------------
