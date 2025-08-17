@@ -1325,11 +1325,18 @@ def compute_leaderboard(
                 cur = 0
         return cur, best
 
-    streaks = [_streaks(pid) for pid in gp["player_id"].tolist()]
-    if streaks:
-        gp["current_streak"], gp["best_streak"] = zip(*streaks)
-    else:
-        gp["current_streak"], gp["best_streak"] = [], []
+    # --- new (always create the columns) ---
+    gp["current_streak"] = 0
+    gp["best_streak"] = 0
+    if not gp.empty:
+        vals = [_streaks(pid) for pid in gp["player_id"].tolist()]
+        if vals:  # len == len(gp)
+            gp.loc[:, "current_streak"] = pd.Series(
+                [a for a, _ in vals], index=gp.index
+            ).astype(int)
+            gp.loc[:, "best_streak"] = pd.Series(
+                [b for _, b in vals], index=gp.index
+            ).astype(int)
 
     # Order leaderboard — rank by highest ELO (ties: more wins, then higher win%)
     lb = gp.sort_values(
