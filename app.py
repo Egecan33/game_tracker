@@ -339,28 +339,332 @@ def sha256_hex(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
-def check_pin(player_id: str, pin: str) -> bool:
+# ── Daily puzzle & run helpers (03:00 UTC rollover) ──────────────────────────
+def _utc_now() -> pd.Timestamp:
+    return pd.Timestamp.utcnow()
+
+
+def _window(
+    now: Optional[pd.Timestamp] = None,
+) -> Tuple[pd.Timestamp, pd.Timestamp, date]:
+    now = now or _utc_now()
+    if now.hour < UTC_CUTOFF_HOUR:
+        now = now - pd.Timedelta(days=1)
+    day = now.normalize()
+    start = day + pd.Timedelta(hours=UTC_CUTOFF_HOUR)
+    end = start + pd.Timedelta(days=1) - pd.Timedelta(microseconds=1)
+    return start, end, start.date()
+
+
+def ensure_today_puzzle(games_df: pd.DataFrame) -> Tuple[str, str, date]:
+    """Return (puzzle_id, answer_game_id, puzzle_date). Create deterministically if missing."""
+    if games_df.empty:
+        raise RuntimeError("No games")
+    start, end, pday = _window()
+    # lookup
+    r = (
+        supabase.table("daily_puzzles")
+        .select("*")
+        .eq("puzzle_date", str(pday))
+        .execute()
+        .data
+        or []
+    )
+    if r:
+        return r[0]["id"], r[0]["game_id"], pday
+    ids = games_df["id"].tolist()
+    idx = int(hashlib.md5(str(pday).encode()).hexdigest(), 16) % len(ids)
+    gid = ids[idx]
+    created = (
+        supabase.table("daily_puzzles")
+        .insert({"puzzle_date": str(pday), "game_id": gid})
+        .execute()
+        .data[0]
+    )
+    return created["id"], gid, pday
+
+
+def get_or_create_run(puzzle_id: str, player_id: str) -> Dict[str, Any]:
+    r = (
+        supabase.table("daily_runs")
+        .select("*")
+        .eq("puzzle_id", puzzle_id)
+        .eq("player_id", player_id)
+        .execute()
+        .data
+        or []
+    )
+    if r:
+        return r[0]
+    return (
+        supabase.table("daily_runs")
+        .insert(
+            {
+                "id": _uuid(),
+                "puzzle_id": puzzle_id,
+                "player_id": player_id,
+                "started_at": _utc_now().isoformat(),
+            }
+        )
+        .execute()
+        .data[0]
+    )
+
+
+def record_guess(
+    run: Dict[str, Any], guess_game_id: str, answer_game_id: str
+) -> Tuple[Dict[str, Any], int, bool]:
+    """Insert attempt if not solved. Returns (updated_run, attempt_no, is_correct)."""
+    if run.get("solved_at"):
+        return run, 0, False  # locked
+    rid = run["id"]
+    prev = (
+        supabase.table("daily_attempts")
+        .select("attempt_no")
+        .eq("run_id", rid)
+        .order("attempt_no", desc=True)
+        .limit(1)
+        .execute()
+        .data
+        or []
+    )
+    next_no = (prev[0]["attempt_no"] + 1) if prev else 1
+    correct = guess_game_id == answer_game_id
+    supabase.table("daily_attempts").insert(
+        {
+            "id": _uuid(),
+            "run_id": rid,
+            "attempt_no": next_no,
+            "guess_game_id": guess_game_id,
+            "is_correct": correct,
+        }
+    ).execute()
+    if correct:
+        now = _utc_now().isoformat()
+        supabase.table("daily_runs").update({"solved_at": now}).eq("id", rid).execute()
+        run["solved_at"] = now
+    return run, next_no, correct
+
+
+# LoLdle-ish clues (gracefully handles missing columns)
+def _as_set(x):
+    if x is None or (isinstance(x, float) and pd.isna(x)):
+        return set()
+    if isinstance(x, list):
+        return set([str(v).strip() for v in x if v is not None])
+    return set([s.strip() for s in str(x).split(",") if s.strip()])
+
+
+def build_clues(
+    guess: pd.Series, answer: pd.Series, sessions_df: pd.DataFrame
+) -> Dict[str, Tuple[str, str]]:
+    """Return dict: label -> (value_to_show, style_flag) where style_flag in {'ok','mid','bad','up','down','na'}."""
+    out: Dict[str, Tuple[str, str]] = {}
+
+    # type
+    gtype = str(guess.get("game_type") or "—")
+    atype = str(answer.get("game_type") or "—")
+    out["Type"] = (
+        gtype,
+        (
+            "ok"
+            if gtype == atype and gtype != "—"
+            else ("na" if gtype == "—" or atype == "—" else "bad")
+        ),
+    )
+
+    # min/max players
+    for lab, key in [("Min", "min_players"), ("Max", "max_players")]:
+        gv, av = guess.get(key), answer.get(key)
+        if pd.isna(gv) or pd.isna(av):
+            out[lab] = ("—", "na")
+        elif gv == av:
+            out[lab] = (f"{int(gv)}", "ok")
+        elif gv < av:
+            out[lab] = (f"{int(gv)} ↑", "up")
+        else:
+            out[lab] = (f"{int(gv)} ↓", "down")
+
+    # modes (ffa/team/coop/solo booleans)
+    for lab, key in [
+        ("FFA", "supports_ffa"),
+        ("Team", "supports_team"),
+        ("Co-op", "supports_coop"),
+        ("Solo", "supports_solo"),
+    ]:
+        gv = bool(guess.get(key, False))
+        av = bool(answer.get(key, False))
+        out[lab] = ("✓" if gv else "✗", "ok" if gv == av else "bad")
+
+    # mechanics overlap
+    gm = _as_set(guess.get("mechanics"))
+    am = _as_set(answer.get("mechanics"))
+    if not gm or not am:
+        out["Mechanics"] = ("—", "na")
+    elif gm == am:
+        out["Mechanics"] = (", ".join(sorted(gm)), "ok")
+    elif gm & am:
+        out["Mechanics"] = (", ".join(sorted(gm & am)), "mid")
+    else:
+        out["Mechanics"] = ("—", "bad")
+
+    # release year
+    gy = guess.get("release_year")
+    ay = answer.get("release_year")
+    if pd.isna(gy) or pd.isna(ay):
+        out["Year"] = ("—", "na")
+    elif gy == ay:
+        out["Year"] = (str(int(gy)), "ok")
+    elif gy < ay:
+        out["Year"] = (f"{int(gy)} ↑", "up")
+    else:
+        out["Year"] = (f"{int(gy)} ↓", "down")
+
+    # times played in our DB
+    def _played(game_id: str) -> int:
+        try:
+            return sessions_df[sessions_df["game_id"] == game_id][
+                "session_id"
+            ].nunique()
+        except Exception:
+            return 0
+
+    gplayed = _played(guess["id"])
+    aplayed = _played(answer["id"])
+    if gplayed == aplayed:
+        out["Played"] = (str(gplayed), "ok")
+    elif gplayed < aplayed:
+        out["Played"] = (f"{gplayed} ↑", "up")
+    else:
+        out["Played"] = (f"{gplayed} ↓", "down")
+
+    # champion/owner (optional string column)
+    gchamp = str(guess.get("champion") or "—")
+    achamp = str(answer.get("champion") or "—")
+    out["Champion"] = (
+        gchamp,
+        (
+            "ok"
+            if gchamp != "—" and gchamp == achamp
+            else ("na" if gchamp == "—" or achamp == "—" else "bad")
+        ),
+    )
+
+    return out
+
+
+def render_clues(clues: Dict[str, Tuple[str, str]]):
+    def chip(txt, kind):
+        colors = {
+            "ok": "#16a34a",
+            "mid": "#f59e0b",
+            "bad": "#ef4444",
+            "up": "#3b82f6",
+            "down": "#3b82f6",
+            "na": "#6b7280",
+        }
+        bg = colors.get(kind, "#6b7280")
+        return f"<span style='background:{bg};color:#fff;padding:6px 10px;border-radius:10px;margin:4px;display:inline-block;font-weight:600'>{txt}</span>"
+
+    st.markdown(
+        "".join(chip(f"{k}: {v}", t) for k, (v, t) in clues.items()),
+        unsafe_allow_html=True,
+    )
+
+
+# ── Auth helpers (secure PBKDF + auto-detect storage) ────────────────────────
+def _hash_pin(pin: str, salt: Optional[str] = None) -> Tuple[str, str]:
+    import os as _os, hashlib
+
+    if not salt:
+        salt = _os.urandom(16).hex()
+    dk = hashlib.pbkdf2_hmac(
+        "sha256", pin.encode("utf-8"), bytes.fromhex(salt), 150_000
+    )
+    return dk.hex(), salt
+
+
+def _auth_read(player_id: str) -> Tuple[Optional[str], Optional[str]]:
+    """Read (pin_hash, pin_salt) from players or player_auth (whichever exists)."""
     if not supabase:
-        return False
+        return None, None
     try:
-        res = (
+        r = (
+            supabase.table("players")
+            .select("pin_hash,pin_salt")
+            .eq("id", player_id)
+            .execute()
+            .data
+        )
+        if r and (r[0].get("pin_hash") or r[0].get("pin_salt")):
+            return r[0].get("pin_hash"), r[0].get("pin_salt")
+    except Exception:
+        pass
+    try:
+        r = (
             supabase.table("player_auth")
-            .select("*")
+            .select("pin_hash,pin_salt")
             .eq("player_id", player_id)
             .execute()
+            .data
         )
-        rows = res.data or []
-        if not rows:
-            return False
-        return rows[0]["pin_hash"] == sha256_hex(pin)
+        if r:
+            return r[0].get("pin_hash"), r[0].get("pin_salt")
     except Exception:
+        pass
+    return None, None
+
+
+def verify_pin(stored_hash: Optional[str], salt: Optional[str], candidate: str) -> bool:
+    if not stored_hash or not salt:
         return False
+    import hmac
+
+    new_hash, _ = _hash_pin(candidate, salt)
+    return hmac.compare_digest(stored_hash, new_hash)
 
 
-def set_pin(player_id: str, pin: str) -> bool:
-    return sb_upsert(
-        "player_auth", {"player_id": player_id, "pin_hash": sha256_hex(pin)}
-    )
+def set_player_pin(player_id: str, new_pin: str) -> bool:
+    """Write to players.* if columns exist; otherwise upsert to player_auth."""
+    if not supabase:
+        return False
+    pin_hash, pin_salt = _hash_pin(new_pin)
+    now = datetime.utcnow().isoformat()
+    ok = False
+    try:
+        supabase.table("players").update(
+            {"pin_hash": pin_hash, "pin_salt": pin_salt, "pin_set_at": now}
+        ).eq("id", player_id).execute()
+        ok = True
+    except Exception:
+        pass
+    if not ok:
+        try:
+            existing = (
+                supabase.table("player_auth")
+                .select("player_id")
+                .eq("player_id", player_id)
+                .execute()
+                .data
+            )
+            if existing:
+                supabase.table("player_auth").update(
+                    {"pin_hash": pin_hash, "pin_salt": pin_salt, "pin_set_at": now}
+                ).eq("player_id", player_id).execute()
+            else:
+                supabase.table("player_auth").insert(
+                    {
+                        "player_id": player_id,
+                        "pin_hash": pin_hash,
+                        "pin_salt": pin_salt,
+                        "pin_set_at": now,
+                    }
+                ).execute()
+            ok = True
+        except Exception as e:
+            st.error(f"Failed to set password: {e}")
+            ok = False
+    return ok
 
 
 def ensure_daily_game_exists(date_key: str, games_df: pd.DataFrame) -> Optional[str]:
@@ -391,98 +695,99 @@ def ensure_daily_game_exists(date_key: str, games_df: pd.DataFrame) -> Optional[
         return None
 
 
-def award_yesterday_if_needed() -> None:
-    """Idempotent: compute yesterday's podium and create elo_bonus rows if not awarded."""
+def award_yesterday_if_needed():
+    """Compute podium from daily_runs + daily_attempts; write to elo_bonus (legacy)."""
     if not supabase:
         return
-    ykey = prev_daily_key_utc()
-    try:
-        drow = (
-            supabase.table("daily_game").select("*").eq("date_key", ykey).execute().data
-        )
-        if not drow or (drow[0].get("awarded") is True):
-            return  # nothing to do
-        # compute solved attempts for yesterday
-        att = (
-            supabase.table("loldle_attempts")
-            .select("*")
-            .eq("date_key", ykey)
-            .order("created_at")
+    _, _, y_date = _window(_utc_now() - pd.Timedelta(days=1))
+    dp = (
+        supabase.table("daily_puzzles")
+        .select("*")
+        .eq("puzzle_date", str(y_date))
+        .execute()
+        .data
+        or []
+    )
+    if not dp:
+        return
+    puzzle_id = dp[0]["id"]
+    if dp[0].get("awarded"):
+        return
+
+    runs = (
+        supabase.table("daily_runs")
+        .select("*")
+        .eq("puzzle_id", puzzle_id)
+        .execute()
+        .data
+        or []
+    )
+    results = []
+    for r in runs:
+        if not r.get("solved_at"):
+            continue
+        win = (
+            supabase.table("daily_attempts")
+            .select("attempt_no")
+            .eq("run_id", r["id"])
+            .eq("is_correct", True)
+            .order("attempt_no")
+            .limit(1)
             .execute()
             .data
             or []
         )
-        if not att:
-            # set awarded even if nobody played (as a guard)
-            supabase.table("daily_game").update({"awarded": True}).eq(
-                "date_key", ykey
-            ).execute()
-            return
-        # Build per-player summary: first attempt time and first correct attempt time
-        by_player: Dict[str, Dict[str, Any]] = {}
-        for r in att:
-            pid = r["player_id"]
-            if pid not in by_player:
-                by_player[pid] = {
-                    "first_ts": pd.to_datetime(r["created_at"]),
-                    "solved_ts": None,
-                    "solved_attempt": None,
-                }
-            if r["is_correct"] and by_player[pid]["solved_ts"] is None:
-                by_player[pid]["solved_ts"] = pd.to_datetime(r["created_at"])
-                by_player[pid]["solved_attempt"] = int(r["attempt_no"])
-        # Keep only solvers
-        solved = [
-            (pid, v["solved_attempt"], (v["solved_ts"] - v["first_ts"]).total_seconds())
-            for pid, v in by_player.items()
-            if v["solved_ts"] is not None
-        ]
-        solved.sort(key=lambda x: (x[1], x[2]))  # attempts asc, then elapsed asc
-
-        n = len(solved)
-        if n == 0:
-            # nobody solved; award = none
-            supabase.table("daily_game").update({"awarded": True}).eq(
-                "date_key", ykey
-            ).execute()
-            return
-
-        # Determine podium points
-        awards: List[Tuple[str, float]] = []
-        if n == 1:
-            awards = [(solved[0][0], 1.0)]
-        elif n == 2:
-            awards = [(solved[0][0], 2.0), (solved[1][0], 1.0)]
-        else:
-            awards = [(solved[0][0], 4.0), (solved[1][0], 2.0), (solved[2][0], 1.0)]
-
-        # Insert elo_bonus rows if not already inserted for that day_key
-        existing = (
-            supabase.table("elo_bonus")
-            .select("player_id,points")
-            .eq("date_key", ykey)
-            .execute()
-            .data
-            or []
+        if not win:
+            continue
+        attempts = int(win[0]["attempt_no"])
+        t = int(
+            (
+                pd.to_datetime(r["solved_at"]) - pd.to_datetime(r["started_at"])
+            ).total_seconds()
         )
-        if not existing:
-            payload = [
+        results.append((r["player_id"], attempts, t))
+
+    results.sort(key=lambda x: (x[1], x[2]))
+    n = len(results)
+    if n == 0:
+        supabase.table("daily_puzzles").update({"awarded": True}).eq(
+            "id", puzzle_id
+        ).execute()
+        return
+    podium = (
+        [(results[0][0], 1.0)]
+        if n == 1
+        else (
+            [(results[0][0], 2.0), (results[1][0], 1.0)]
+            if n == 2
+            else [(results[0][0], 4.0), (results[1][0], 2.0), (results[2][0], 1.0)]
+        )
+    )
+
+    existing = (
+        supabase.table("elo_bonus")
+        .select("player_id")
+        .eq("date_key", str(y_date))
+        .execute()
+        .data
+        or []
+    )
+    if not existing:
+        supabase.table("elo_bonus").insert(
+            [
                 {
                     "id": _uuid(),
                     "player_id": pid,
                     "points": pts,
-                    "reason": f"BoardGamDLE podium {ykey}",
-                    "date_key": ykey,
+                    "reason": f"BoardGamDLE podium {y_date}",
+                    "date_key": str(y_date),
                 }
-                for pid, pts in awards
+                for pid, pts in podium
             ]
-            supabase.table("elo_bonus").insert(payload).execute()
-        supabase.table("daily_game").update({"awarded": True}).eq(
-            "date_key", ykey
         ).execute()
-    except Exception as e:
-        # soft-fail: don't block page render
-        st.warning(f"Bonus award check failed: {e}")
+    supabase.table("daily_puzzles").update({"awarded": True}).eq(
+        "id", puzzle_id
+    ).execute()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -827,19 +1132,28 @@ def compute_leaderboard(
                 }
             )
 
-    # NEW: add permanent BoardGamDLE bonuses
+    gp["elo"] = gp["player_id"].map(ratings)
+    # Overlay permanent BoardGamDLE bonuses (legacy + new)
     try:
-        bonus_df = sb_select("elo_bonus")
-        if not bonus_df.empty:
-            bonus_map = bonus_df.groupby("player_id")["points"].sum().to_dict()
-            gp["elo_bonus"] = gp["player_id"].map(bonus_map).fillna(0.0)
-            gp["elo"] = gp["elo"] + gp["elo_bonus"]
-        else:
-            gp["elo_bonus"] = 0.0
+        bonus = pd.Series(dtype=float)
+        # new table (optional)
+        dr = sb_select("daily_rewards")
+        if not dr.empty and "bonus_elo" in dr.columns:
+            bonus = dr.groupby("player_id")["bonus_elo"].sum()
+        # legacy
+        eb = sb_select("elo_bonus")
+        if not eb.empty:
+            col = (
+                "bonus_elo"
+                if "bonus_elo" in eb.columns
+                else ("points" if "points" in eb.columns else None)
+            )
+            if col:
+                bonus = bonus.add(eb.groupby("player_id")[col].sum(), fill_value=0.0)
+        gp["elo_bonus"] = gp["player_id"].map(bonus).fillna(0.0)
+        gp["elo"] = gp["elo"] + gp["elo_bonus"]
     except Exception:
         gp["elo_bonus"] = 0.0
-
-    gp["elo"] = gp["player_id"].map(ratings)
 
     # Streaks
     def _streaks(pid: str) -> Tuple[int, int]:
@@ -1392,8 +1706,9 @@ if mode == "General":
                 )
     # ───────────────── BoardGamDLE (new) ─────────────────
     with tabs_g[1]:
-        # 1) ensure yesterday awards are handled (idempotent)
-        award_yesterday_if_needed()
+        # 1) Yesterday’s answer (from daily_puzzles)
+        _, _, today_date = _window()
+        y_start, y_end, y_date = _window(_utc_now() - pd.Timedelta(days=1))
 
         games_df = sb_select("games")
         players_df = sb_select("players")
@@ -1401,211 +1716,141 @@ if mode == "General":
             st.info("Admin must add at least one game and one player first.")
             st.stop()
 
-        today_key = daily_key_utc()
-        yday_key = prev_daily_key_utc()
-
-        # previous day's answer (if we had one)
-        prev_row = sb_select("daily_game")
-        prev_row = (
-            prev_row[prev_row["date_key"] == yday_key]
-            if not prev_row.empty
-            else pd.DataFrame()
-        )
-        prev_ans_name = None
-        if not prev_row.empty:
-            gid = prev_row["game_id"].iloc[0]
-            gname_map = dict(zip(games_df["id"], games_df["name"]))
-            prev_ans_name = gname_map.get(gid, None)
-        st.caption(
-            f"🕓 Daily rolls over at 03:00 UTC • Yesterday’s answer: **{prev_ans_name or '—'}**"
-        )
-
-        # ensure today's daily exists
-        answer_game_id = ensure_daily_game_exists(today_key, games_df)
-        if not answer_game_id:
-            st.error("Could not load today's daily game.")
-            st.stop()
-
-        # Login / PIN
-        name_to_id = dict(zip(players_df["name"], players_df["id"]))
-        id_to_name = dict(zip(players_df["id"], players_df["name"]))
-
-        st.subheader("Login")
-        lc1, lc2, lc3 = st.columns([3, 2, 1])
-        sel_name = lc1.selectbox(
-            "Your player", options=sorted(players_df["name"].tolist())
-        )
-        pin = lc2.text_input("PIN", type="password")
-        if "bgd_auth" not in st.session_state:
-            st.session_state["bgd_auth"] = None
-
-        # Allow first-time PIN set if none exists and player has at least one session
-        can_set_pin = False
-        try:
-            pid_for_set = name_to_id.get(sel_name)
-            played_any = (
-                not sb_select_sessions_joined().query("player_id == @pid_for_set").empty
-            )
-            # check has existing pin
-            have_pin = False
-            if supabase and pid_for_set:
-                r = (
-                    supabase.table("player_auth")
-                    .select("*")
-                    .eq("player_id", pid_for_set)
-                    .execute()
-                    .data
-                    or []
-                )
-                have_pin = bool(r)
-            can_set_pin = (not have_pin) and played_any
-        except Exception:
-            pass
-
-        set_pin_exp = st.expander("First time? Set or reset your PIN", expanded=False)
-        with set_pin_exp:
-            new_pin = st.text_input(
-                "New PIN (4–8 digits)", type="password", max_chars=8, key="bgd_newpin"
-            )
-            if st.button("Save PIN"):
-                if not new_pin or len(new_pin) < 4:
-                    st.error("Please enter 4–8 digits.")
-                else:
-                    ok = set_pin(name_to_id[sel_name], new_pin)
-                    if ok:
-                        st.success("PIN saved. You can now log in above.")
-
-        if lc3.button("Log in"):
-            pid = name_to_id.get(sel_name)
-            if not pid:
-                st.error("Unknown player.")
-            elif not pin:
-                st.error("Enter your PIN.")
-            elif not check_pin(pid, pin):
-                st.error("Wrong PIN.")
-            else:
-                st.session_state["bgd_auth"] = {
-                    "player_id": pid,
-                    "player_name": sel_name,
-                }
-
-        if not st.session_state["bgd_auth"]:
-            st.stop()
-
-        pid = st.session_state["bgd_auth"]["player_id"]
-        st.success(f"Welcome, {st.session_state['bgd_auth']['player_name']}!")
-
-        # Guess UI
-        st.subheader("Make a guess")
-        gcol1, gcol2 = st.columns([4, 1])
-        guess_name = gcol1.selectbox(
-            "Guess the game", options=sorted(games_df["name"].tolist())
-        )
-        if gcol2.button("Submit guess"):
-            gid = dict(zip(games_df["name"], games_df["id"])).get(guess_name)
-            if gid:
-                # how many attempts so far today?
-                prev = (
-                    supabase.table("loldle_attempts")
-                    .select("attempt_no")
-                    .eq("date_key", today_key)
-                    .eq("player_id", pid)
-                    .order("attempt_no", desc=True)
-                    .limit(1)
-                    .execute()
-                    .data
-                    or []
-                )
-                next_no = (prev[0]["attempt_no"] + 1) if prev else 1
-                is_correct = gid == answer_game_id
-                supabase.table("loldle_attempts").insert(
-                    {
-                        "id": _uuid(),
-                        "date_key": today_key,
-                        "player_id": pid,
-                        "guess_game_id": gid,
-                        "is_correct": is_correct,
-                        "attempt_no": next_no,
-                    }
-                ).execute()
-                if is_correct:
-                    st.balloons()
-                    st.success("Correct!")
-
-        # Personal history today
-        my_attempts = (
-            supabase.table("loldle_attempts")
+        # Show yesterday's answer if exists
+        prev = (
+            supabase.table("daily_puzzles")
             .select("*")
-            .eq("date_key", today_key)
-            .eq("player_id", pid)
-            .order("created_at")
+            .eq("puzzle_date", str(y_date))
             .execute()
             .data
             or []
         )
-        if my_attempts:
-            mdf = pd.DataFrame(my_attempts)
-            first_ts = pd.to_datetime(mdf["created_at"].iloc[0])
-            solved_rows = mdf[mdf["is_correct"]]
-            if not solved_rows.empty:
-                solved_ts = pd.to_datetime(solved_rows["created_at"].iloc[0])
-                elapsed = (solved_ts - first_ts).total_seconds()
-                st.info(
-                    f"You solved it in **{int(solved_rows['attempt_no'].iloc[0])} attempts** and **{int(elapsed)}s**."
-                )
+        prev_ans = None
+        if prev:
+            gid = prev[0]["game_id"]
+            prev_ans = (
+                games_df.loc[games_df["id"] == gid, "name"].iloc[0]
+                if (games_df["id"] == gid).any()
+                else None
+            )
+        st.caption(
+            f"🕓 Daily rolls over at 03:00 UTC • Yesterday’s answer: **{prev_ans or '—'}**"
+        )
+
+        # 2) Ensure today's puzzle and get answer
+        puzzle_id, answer_game_id, puzzle_date = ensure_today_puzzle(games_df)
+
+        # 3) Login (already authenticated above using new helpers)
+        # pid already set by login block
+        run = get_or_create_run(puzzle_id, pid)
+        solved = bool(run.get("solved_at"))
+
+        answer_row = games_df[games_df["id"] == answer_game_id].iloc[0]
+
+        # 4) Guess UI (locked after solved)
+        st.subheader("Make a guess")
+        gcol1, gcol2 = st.columns([4, 1])
+        guess_name = gcol1.selectbox(
+            "Guess the game", options=sorted(games_df["name"].tolist()), disabled=solved
+        )
+        submit_guess = gcol2.button("Submit guess", disabled=solved)
+
+        if submit_guess and not solved:
+            gid = dict(zip(games_df["name"], games_df["id"])).get(guess_name)
+            if gid:
+                run, attempt_no, is_correct = record_guess(run, gid, answer_game_id)
+                guess_row = games_df[games_df["id"] == gid].iloc[0]
+                if is_correct:
+                    st.balloons()
+                    st.success(f"Correct in {attempt_no} attempt(s)!")
+                else:
+                    st.warning("Not it. Your clues:")
+                # LoLdle-style clues
+                joined = sb_select_sessions_joined()
+                render_clues(build_clues(guess_row, answer_row, joined))
+
+        # 5) Personal history + lock banner
+        attempts = (
+            supabase.table("daily_attempts")
+            .select("*")
+            .eq("run_id", run["id"])
+            .order("attempt_no")
+            .execute()
+            .data
+            or []
+        )
+        if attempts:
+            adf = pd.DataFrame(attempts).merge(
+                games_df[["id", "name"]],
+                left_on="guess_game_id",
+                right_on="id",
+                how="left",
+            )
             st.dataframe(
-                mdf.merge(
-                    games_df[["id", "name"]],
-                    left_on="guess_game_id",
-                    right_on="id",
-                    how="left",
-                )[["attempt_no", "name", "is_correct", "created_at"]].rename(
+                adf[["attempt_no", "name", "is_correct", "created_at"]].rename(
                     columns={"name": "Guess", "is_correct": "✓", "created_at": "When"}
                 ),
                 use_container_width=True,
                 hide_index=True,
             )
 
-        # Daily leaderboard (attempts asc, total time asc)
+        if solved:
+            st.markdown(
+                "<div style='padding:10px;border-radius:8px;background:#133;color:#fff'>Solved — come back after 03:00 UTC for a new puzzle.</div>",
+                unsafe_allow_html=True,
+            )
+
+        # 6) Today’s leaderboard (attempts asc, time asc)
         st.subheader("Today’s leaderboard")
-        today_att = (
-            supabase.table("loldle_attempts")
+        runs = (
+            supabase.table("daily_runs")
             .select("*")
-            .eq("date_key", today_key)
-            .order("created_at")
+            .eq("puzzle_id", puzzle_id)
             .execute()
             .data
             or []
         )
-        if today_att:
-            tdf = pd.DataFrame(today_att)
-            summaries = []
-            for p, g in tdf.groupby("player_id"):
-                g = g.sort_values("created_at")
-                first_ts = pd.to_datetime(g["created_at"].iloc[0])
-                win = g[g["is_correct"]]
-                if not win.empty:
-                    solved_ts = pd.to_datetime(win["created_at"].iloc[0])
-                    summaries.append(
-                        {
-                            "player_id": p,
-                            "Player": id_to_name.get(p, p),
-                            "Attempts": int(win["attempt_no"].iloc[0]),
-                            "Time (s)": int((solved_ts - first_ts).total_seconds()),
-                        }
-                    )
-            if summaries:
-                s = pd.DataFrame(summaries).sort_values(
-                    ["Attempts", "Time (s)", "Player"]
-                )
-                st.dataframe(s, use_container_width=True, hide_index=True)
-                st.caption(
-                    "Podium at 03:00 UTC gets ELO bonuses: 4/2/1 (2 players: 2/1, 1 player: 1)."
-                )
-            else:
-                st.info("No one has solved it yet.")
+        summaries = []
+        for r in runs:
+            if not r.get("solved_at"):
+                continue
+            rid = r["id"]
+            win = (
+                supabase.table("daily_attempts")
+                .select("attempt_no")
+                .eq("run_id", rid)
+                .eq("is_correct", True)
+                .order("attempt_no")
+                .limit(1)
+                .execute()
+                .data
+                or []
+            )
+            if not win:
+                continue
+            attempts_to_win = int(win[0]["attempt_no"])
+            t = int(
+                (
+                    pd.to_datetime(r["solved_at"]) - pd.to_datetime(r["started_at"])
+                ).total_seconds()
+            )
+            summaries.append(
+                {
+                    "player_id": r["player_id"],
+                    "Player": id_to_name.get(r["player_id"], r["player_id"]),
+                    "Attempts": attempts_to_win,
+                    "Time (s)": t,
+                }
+            )
+
+        if summaries:
+            s = pd.DataFrame(summaries).sort_values(["Attempts", "Time (s)", "Player"])
+            st.dataframe(s, use_container_width=True, hide_index=True)
+            st.caption(
+                "Podium at 03:00 UTC gets ELO bonuses: 4/2/1 (2 players: 2/1, 1 player: 1)."
+            )
         else:
-            st.info("Be the first to guess today!")
+            st.info("No one has solved it yet.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2161,6 +2406,20 @@ if mode == "Admin":
             ):
                 st.success(f"Added player {name}")
                 st.cache_data.clear()
+
+        st.markdown("---")
+        st.markdown("**Reset a player password**")
+        rp1, rp2, rp3 = st.columns([2, 2, 1])
+        _reset_player = rp1.selectbox(
+            "Player", players_df["name"].tolist(), key="adm_pwd_player"
+        )
+        _new_tmp = rp2.text_input(
+            "New temporary PIN", type="password", key="adm_pwd_tmp"
+        )
+        if rp3.button("Set / Reset", type="primary", disabled=not bool(_new_tmp)):
+            _pid = dict(zip(players_df["name"], players_df["id"])).get(_reset_player)
+            if _pid and set_player_pin(_pid, _new_tmp):
+                st.success(f"PIN for {_reset_player} reset.")
 
     # ------------------------- Games -------------------------
     with tabs[2]:
