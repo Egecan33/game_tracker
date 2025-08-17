@@ -357,31 +357,71 @@ def _window(
 
 
 def ensure_today_puzzle(games_df: pd.DataFrame) -> Tuple[str, str, date]:
-    """Return (puzzle_id, answer_game_id, puzzle_date). Create deterministically if missing."""
+    """
+    Return (puzzle_id, answer_game_id, puzzle_date).
+    Creates today's row deterministically if missing.
+    - Handles missing table/RLS errors with a clear message.
+    - Inserts an explicit id to satisfy NOT NULL PK schemas.
+    """
     if games_df.empty:
-        raise RuntimeError("No games")
-    start, end, pday = _window()
-    # lookup
-    r = (
-        supabase.table("daily_puzzles")
-        .select("*")
-        .eq("puzzle_date", str(pday))
-        .execute()
-        .data
-        or []
-    )
-    if r:
-        return r[0]["id"], r[0]["game_id"], pday
+        raise RuntimeError("No games available to choose a daily puzzle from.")
+    if not supabase:
+        raise RuntimeError("Supabase client not initialized.")
+
+    _, _, pday = _window()
+    day_str = pday.isoformat()
+
+    try:
+        existing = (
+            supabase.table("daily_puzzles")
+            .select("id,game_id,puzzle_date,awarded")
+            .eq("puzzle_date", day_str)
+            .limit(1)
+            .execute()
+            .data
+            or []
+        )
+    except Exception as e:
+        st.error(
+            "Could not read table `daily_puzzles` (does it exist, and does anon have SELECT?)."
+        )
+        raise
+
+    if existing:
+        row = existing[0]
+        return row["id"], row["game_id"], pday
+
+    # Pick deterministically so it's stable on cold start
     ids = games_df["id"].tolist()
-    idx = int(hashlib.md5(str(pday).encode()).hexdigest(), 16) % len(ids)
+    idx = int(hashlib.md5(day_str.encode()).hexdigest(), 16) % len(ids)
     gid = ids[idx]
-    created = (
-        supabase.table("daily_puzzles")
-        .insert({"puzzle_date": str(pday), "game_id": gid})
-        .execute()
-        .data[0]
-    )
-    return created["id"], gid, pday
+    new_id = _uuid()
+
+    try:
+        # Insert explicit id; ask PostgREST to return it
+        created = (
+            supabase.table("daily_puzzles")
+            .insert(
+                {
+                    "id": new_id,
+                    "puzzle_date": day_str,  # DATE column is fine with 'YYYY-MM-DD'
+                    "game_id": gid,
+                    "awarded": False,
+                }
+            )
+            .select("id")  # ensure we get .data back in all PostgREST configs
+            .execute()
+            .data
+        )
+        if not created:
+            raise RuntimeError("Insert returned no row.")
+        return created[0]["id"], gid, pday
+    except Exception as e:
+        st.error(
+            "Could not insert into `daily_puzzles` "
+            "(does anon have INSERT? does the schema match columns?)."
+        )
+        raise
 
 
 def get_or_create_run(puzzle_id: str, player_id: str) -> Dict[str, Any]:
@@ -1740,6 +1780,49 @@ if mode == "General":
         # 2) Ensure today's puzzle and get answer
         puzzle_id, answer_game_id, puzzle_date = ensure_today_puzzle(games_df)
 
+        # --- Login (stores pid in session) ---
+        name_to_id = dict(zip(players_df["name"], players_df["id"]))
+        id_to_name = dict(zip(players_df["id"], players_df["name"]))
+
+        st.subheader("Login")
+        lc1, lc2, lc3 = st.columns([3, 2, 1])
+        sel_name = lc1.selectbox(
+            "Your player", options=sorted(players_df["name"].tolist())
+        )
+        pin = lc2.text_input("PIN", type="password")
+
+        # Allow first-time set if no pin is present anywhere
+        stored_hash, stored_salt = _auth_read(name_to_id[sel_name])
+        if lc3.button("Log in"):
+            if not pin:
+                st.error("Enter your PIN.")
+            elif not verify_pin(stored_hash, stored_salt, pin):
+                st.error("Wrong PIN.")
+            else:
+                st.session_state["bgd_auth"] = {
+                    "player_id": name_to_id[sel_name],
+                    "player_name": sel_name,
+                }
+                st.success(f"Welcome, {sel_name}!")
+
+        # Optional: let a user set a PIN if none exists
+        with st.expander("First time? Set your PIN"):
+            new_pin = st.text_input(
+                "New PIN (4–8 digits)", type="password", max_chars=8
+            )
+            if st.button("Save PIN"):
+                if not new_pin or len(new_pin) < 4:
+                    st.error("Please enter 4–8 digits.")
+                else:
+                    if set_player_pin(name_to_id[sel_name], new_pin):
+                        st.success("PIN saved. You can now log in above.")
+
+        auth = st.session_state.get("bgd_auth")
+        if not auth:
+            st.stop()  # don't render the rest of the tab until logged in
+
+        pid = auth["player_id"]
+        st.caption(f"Logged in as **{auth['player_name']}**")
         # 3) Login (already authenticated above using new helpers)
         # pid already set by login block
         run = get_or_create_run(puzzle_id, pid)
