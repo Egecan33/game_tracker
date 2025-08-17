@@ -356,12 +356,23 @@ def _window(
     return start, end, start.date()
 
 
+def _set_awarded_flag_safe(puzzle_id: str, value: bool = True) -> None:
+    """Attempt to set daily_puzzles.awarded, but no-op if the column doesn't exist or RLS blocks it."""
+    try:
+        supabase.table("daily_puzzles").update({"awarded": value}).eq(
+            "id", puzzle_id
+        ).execute()
+    except Exception:
+        # Column or permission might not exist; we don't depend on it.
+        pass
+
+
 def ensure_today_puzzle(games_df: pd.DataFrame) -> Tuple[str, str, date]:
     """
     Return (puzzle_id, answer_game_id, puzzle_date).
     Creates today's row deterministically if missing.
-    - Handles missing table/RLS errors with a clear message.
-    - Inserts an explicit id to satisfy NOT NULL PK schemas.
+    Works whether or not daily_puzzles has an 'awarded' column.
+    Avoids insert(...).select(...) which is unsupported in supabase-py.
     """
     if games_df.empty:
         raise RuntimeError("No games available to choose a daily puzzle from.")
@@ -371,17 +382,18 @@ def ensure_today_puzzle(games_df: pd.DataFrame) -> Tuple[str, str, date]:
     _, _, pday = _window()
     day_str = pday.isoformat()
 
+    # Try to read an existing row (only the fields we actually use)
     try:
         existing = (
             supabase.table("daily_puzzles")
-            .select("id,game_id,puzzle_date,awarded")
+            .select("id,game_id,puzzle_date")
             .eq("puzzle_date", day_str)
             .limit(1)
             .execute()
             .data
             or []
         )
-    except Exception as e:
+    except Exception:
         st.error(
             "Could not read table `daily_puzzles` (does it exist, and does anon have SELECT?)."
         )
@@ -397,26 +409,19 @@ def ensure_today_puzzle(games_df: pd.DataFrame) -> Tuple[str, str, date]:
     gid = ids[idx]
     new_id = _uuid()
 
+    # Insert with explicit id; don't chain .select() (unsupported in supabase-py)
     try:
-        # Insert explicit id; ask PostgREST to return it
-        created = (
-            supabase.table("daily_puzzles")
-            .insert(
-                {
-                    "id": new_id,
-                    "puzzle_date": day_str,  # DATE column is fine with 'YYYY-MM-DD'
-                    "game_id": gid,
-                    "awarded": False,
-                }
-            )
-            .select("id")  # ensure we get .data back in all PostgREST configs
-            .execute()
-            .data
-        )
-        if not created:
-            raise RuntimeError("Insert returned no row.")
-        return created[0]["id"], gid, pday
-    except Exception as e:
+        supabase.table("daily_puzzles").insert(
+            {
+                "id": new_id,
+                "puzzle_date": day_str,  # DATE 'YYYY-MM-DD'
+                "game_id": gid,
+                # no 'awarded' field — compatible with both schemas
+            }
+        ).execute()
+        # We generated new_id, so we can safely return it without re-reading.
+        return new_id, gid, pday
+    except Exception:
         st.error(
             "Could not insert into `daily_puzzles` "
             "(does anon have INSERT? does the schema match columns?)."
@@ -430,25 +435,23 @@ def get_or_create_run(puzzle_id: str, player_id: str) -> Dict[str, Any]:
         .select("*")
         .eq("puzzle_id", puzzle_id)
         .eq("player_id", player_id)
+        .limit(1)
         .execute()
         .data
         or []
     )
     if r:
         return r[0]
-    return (
-        supabase.table("daily_runs")
-        .insert(
-            {
-                "id": _uuid(),
-                "puzzle_id": puzzle_id,
-                "player_id": player_id,
-                "started_at": _utc_now().isoformat(),
-            }
-        )
-        .execute()
-        .data[0]
-    )
+
+    new = {
+        "id": _uuid(),
+        "puzzle_id": puzzle_id,
+        "player_id": player_id,
+        "started_at": _utc_now().isoformat(),
+    }
+    supabase.table("daily_runs").insert(new).execute()
+    # Some PostgREST configs return no body — just use what we wrote.
+    return new
 
 
 def record_guess(
@@ -736,14 +739,21 @@ def ensure_daily_game_exists(date_key: str, games_df: pd.DataFrame) -> Optional[
 
 
 def award_yesterday_if_needed():
-    """Compute podium from daily_runs + daily_attempts; write to elo_bonus (legacy)."""
+    """
+    Compute podium from daily_runs + daily_attempts and write legacy elo_bonus rows.
+    Idempotent and tolerant of schemas without daily_puzzles.awarded.
+    """
     if not supabase:
         return
+
     _, _, y_date = _window(_utc_now() - pd.Timedelta(days=1))
+    y_key = str(y_date)
+
     dp = (
         supabase.table("daily_puzzles")
-        .select("*")
-        .eq("puzzle_date", str(y_date))
+        .select("id,puzzle_date,game_id")  # no 'awarded'
+        .eq("puzzle_date", y_key)
+        .limit(1)
         .execute()
         .data
         or []
@@ -751,12 +761,25 @@ def award_yesterday_if_needed():
     if not dp:
         return
     puzzle_id = dp[0]["id"]
-    if dp[0].get("awarded"):
+
+    # Already awarded? (legacy signal = elo_bonus rows for that day)
+    existing_bonus = (
+        supabase.table("elo_bonus")
+        .select("id")
+        .eq("date_key", y_key)
+        .limit(1)
+        .execute()
+        .data
+        or []
+    )
+    if existing_bonus:
+        _set_awarded_flag_safe(puzzle_id, True)  # best-effort cosmetic flag
         return
 
+    # Collect solved runs
     runs = (
         supabase.table("daily_runs")
-        .select("*")
+        .select("id,player_id,started_at,solved_at")
         .eq("puzzle_id", puzzle_id)
         .execute()
         .data
@@ -787,47 +810,35 @@ def award_yesterday_if_needed():
         )
         results.append((r["player_id"], attempts, t))
 
+    if not results:
+        _set_awarded_flag_safe(puzzle_id, True)
+        return
+
+    # Podium (attempts asc, then time asc)
     results.sort(key=lambda x: (x[1], x[2]))
     n = len(results)
-    if n == 0:
-        supabase.table("daily_puzzles").update({"awarded": True}).eq(
-            "id", puzzle_id
-        ).execute()
-        return
-    podium = (
-        [(results[0][0], 1.0)]
-        if n == 1
-        else (
-            [(results[0][0], 2.0), (results[1][0], 1.0)]
-            if n == 2
-            else [(results[0][0], 4.0), (results[1][0], 2.0), (results[2][0], 1.0)]
-        )
-    )
+    if n == 1:
+        podium = [(results[0][0], 1.0)]
+    elif n == 2:
+        podium = [(results[0][0], 2.0), (results[1][0], 1.0)]
+    else:
+        podium = [(results[0][0], 4.0), (results[1][0], 2.0), (results[2][0], 1.0)]
 
-    existing = (
-        supabase.table("elo_bonus")
-        .select("player_id")
-        .eq("date_key", str(y_date))
-        .execute()
-        .data
-        or []
-    )
-    if not existing:
-        supabase.table("elo_bonus").insert(
-            [
-                {
-                    "id": _uuid(),
-                    "player_id": pid,
-                    "points": pts,
-                    "reason": f"BoardGamDLE podium {y_date}",
-                    "date_key": str(y_date),
-                }
-                for pid, pts in podium
-            ]
-        ).execute()
-    supabase.table("daily_puzzles").update({"awarded": True}).eq(
-        "id", puzzle_id
+    # Insert bonuses (legacy table). If someone double-clicks, the early guard above prevents dupes.
+    supabase.table("elo_bonus").insert(
+        [
+            {
+                "id": _uuid(),
+                "player_id": pid,
+                "points": pts,  # legacy column name in your code
+                "reason": f"BoardGamDLE podium {y_key}",
+                "date_key": y_key,
+            }
+            for pid, pts in podium
+        ]
     ).execute()
+
+    _set_awarded_flag_safe(puzzle_id, True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
