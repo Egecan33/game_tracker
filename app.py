@@ -166,35 +166,35 @@ EMOJI_ITEM_POOL = ["EMOJI_STAR", "EMOJI_FIRE", "EMOJI_APPLE", "EMOJI_CROWN"]
 BOX_TABLES = {
     "BOX_BRONZE": [
         {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 60, "qty": (1, 3)},
-        {"type": "inventory", "code": "DUST", "weight": 20, "qty": (6, 10)},
-        {"type": "cosmetic", "code": "font_clean", "weight": 7, "qty": 1},
-        {"type": "cosmetic", "code": "font_serif", "weight": 5, "qty": 1},
+        {"type": "inventory", "code": "DUST", "weight": 32.5, "qty": (6, 10)},
+        {"type": "cosmetic", "code": "font_clean", "weight": 6, "qty": 1},
+        {"type": "cosmetic", "code": "font_serif", "weight": 3, "qty": 1},
         {
             "type": "cosmetic",
             "code": ["badge_star", "title_emoji_hunter"],
-            "weight": 8,
+            "weight": 0.5,
             "qty": 1,
         },
     ],
     "BOX_SILVER": [
-        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 45, "qty": (2, 5)},
-        {"type": "inventory", "code": "DUST", "weight": 25, "qty": (14, 20)},
+        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 60, "qty": (2, 5)},
+        {"type": "inventory", "code": "DUST", "weight": 38.9, "qty": (14, 20)},
         {
             "type": "cosmetic",
             "code": ["font_serif", "font_hand", "badge_star", "title_emoji_hunter"],
-            "weight": 18,
+            "weight": 1,
             "qty": 1,
         },
         {
             "type": "cosmetic",
             "code": ["font_arcade", "font_mono", "font_round"],
-            "weight": 12,
+            "weight": 0.1,
             "qty": 1,
         },
     ],
     "BOX_GOLD": [
-        {"type": "inventory", "code": "DUST", "weight": 30, "qty": (26, 36)},
-        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 30, "qty": (5, 8)},
+        {"type": "inventory", "code": "DUST", "weight": 55, "qty": (20, 36)},
+        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 42, "qty": (5, 8)},
         {
             "type": "cosmetic",
             "code": [
@@ -208,32 +208,32 @@ BOX_TABLES = {
                 "title_speedrunner",
                 "title_sharpshooter",
             ],
-            "weight": 30,
+            "weight": 1,
             "qty": 1,
         },
-        {"type": "inventory", "code": "V_PICK_NEXT_GAME", "weight": 10, "qty": 1},
+        {"type": "inventory", "code": "V_PICK_NEXT_GAME", "weight": 2, "qty": 1},
     ],
 }
 
 # ───────────────── Crafting (more routes to cosmetics) ─────────────────
 CRAFT_RECIPES: Dict[str, Dict[str, int]] = {
     # badges/titles
-    "badge_star": {"EMOJI_STAR": 20},
-    "badge_bolt": {"EMOJI_FIRE": 25, "DUST": 30},
-    "badge_crown": {"EMOJI_CROWN": 15, "DUST": 40},
-    "title_emoji_hunter": {"EMOJI_STAR": 10, "EMOJI_APPLE": 10},
-    "title_box_breaker": {"EMOJI_APPLE": 20, "EMOJI_FIRE": 20},
+    "badge_star": {"EMOJI_STAR": 200},
+    "badge_bolt": {"EMOJI_FIRE": 250, "DUST": 300},
+    "badge_crown": {"EMOJI_CROWN": 150, "DUST": 400},
+    "title_emoji_hunter": {"EMOJI_STAR": 100, "EMOJI_APPLE": 100},
+    "title_box_breaker": {"EMOJI_APPLE": 200, "EMOJI_FIRE": 200},
     "title_speedrunner": {"DUST": 120},
-    "title_sharpshooter": {"EMOJI_STAR": 15, "DUST": 60},
+    "title_sharpshooter": {"EMOJI_STAR": 150, "DUST": 600},
     # fonts (let dust buy style)
-    "font_hand": {"DUST": 50},
-    "font_mono": {"DUST": 70},
-    "font_round": {"DUST": 70},
-    "font_script": {"DUST": 90},
-    "font_geo": {"DUST": 100},
-    "font_neon": {"DUST": 120},
-    "font_display": {"DUST": 140},
-    "font_arcade": {"DUST": 150},
+    "font_hand": {"DUST": 150},
+    "font_mono": {"DUST": 700},
+    "font_round": {"DUST": 700},
+    "font_script": {"DUST": 900},
+    "font_geo": {"DUST": 1000},
+    "font_neon": {"DUST": 1200},
+    "font_display": {"DUST": 1400},
+    "font_arcade": {"DUST": 1500},
 }
 
 
@@ -527,9 +527,9 @@ def _run_daily_awards_if_needed():
 # Economy helpers: pity, dup refund, JSON config overrides
 # ─────────────────────────────────────────────────────────────────────────────
 PITY_RULES = {  # cosmetic is guaranteed on or before these counts
-    "BOX_BRONZE": 10,
-    "BOX_SILVER": 7,
-    "BOX_GOLD": 4,
+    "BOX_BRONZE": 100,
+    "BOX_SILVER": 70,
+    "BOX_GOLD": 40,
 }
 DUPLICATE_REFUND_DUST = {  # dust for dup cosmetics by category
     "font": 60,
@@ -2848,7 +2848,6 @@ if mode == "Admin":
             "Manage Sessions",
             "ELO Settings",
             "Approvals",
-            "Economy",
         ]
     )
     players_df = sb_select("players")
@@ -3680,48 +3679,3 @@ if mode == "Admin":
                         if sb_delete_by_id("session_requests", rid):
                             st.warning("Request deleted.")
                             st.cache_data.clear()
-
-    # ------------------------- Economy / Bag Management -------------------------
-
-    with tabs[6]:
-        st.subheader("Economy (drops, crafting, fonts)")
-        st.caption("Edit JSON and save. Safe defaults are used if JSON is invalid.")
-
-        import json
-
-        def _json_area(label, obj, key):
-            raw = st.text_area(
-                label, value=json.dumps(obj, indent=2), height=260, key=key
-            )
-            try:
-                parsed = json.loads(raw)
-                ok = True
-            except Exception as e:
-                st.error(f"{label}: invalid JSON → {e}")
-                parsed, ok = obj, False
-            return parsed, ok
-
-        cur_item_db, ok1 = _json_area("ITEM_DB", ITEM_DB, "econ_items")
-        cur_box_tables, ok2 = _json_area("BOX_TABLES", BOX_TABLES, "econ_boxes")
-        cur_craft, ok3 = _json_area("CRAFT_RECIPES", CRAFT_RECIPES, "econ_craft")
-        cur_fonts, ok4 = _json_area("FONT_CATALOG", FONT_CATALOG, "econ_fonts")
-
-        colA, colB = st.columns([1, 1])
-        if colA.button(
-            "Save all (to config)",
-            type="primary",
-            disabled=not (ok1 and ok2 and ok3 and ok4),
-        ):
-            all_ok = True
-            all_ok &= _save_json_config("economy_item_db", cur_item_db)
-            all_ok &= _save_json_config("economy_box_tables", cur_box_tables)
-            all_ok &= _save_json_config("economy_craft_recipes", cur_craft)
-            all_ok &= _save_json_config("economy_font_catalog", cur_fonts)
-            if all_ok:
-                st.success("Saved. Reload app to take effect.")
-        if colB.button("Revert to built-in defaults", type="secondary"):
-            _save_json_config("economy_item_db", ITEM_DB)
-            _save_json_config("economy_box_tables", BOX_TABLES)
-            _save_json_config("economy_craft_recipes", CRAFT_RECIPES)
-            _save_json_config("economy_font_catalog", FONT_CATALOG)
-            st.warning("Defaults written to config  . Reload app to apply.")
