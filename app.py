@@ -69,6 +69,7 @@ OEO_START_GRID = 3
 OEO_MAX_GRID = 7
 
 # Cosmetic fonts (stored as cosmetic code in bag.equipped.font)
+# ───────────────── Fonts (more styles) ─────────────────
 FONT_CATALOG = {
     "font_arcade": {
         "label": "Arcade",
@@ -95,6 +96,144 @@ FONT_CATALOG = {
         "import": "https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap",
         "css_family": "'Bebas Neue', sans-serif",
     },
+    # NEW:
+    "font_mono": {
+        "label": "Mono",
+        "import": "https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap",
+        "css_family": "'Roboto Mono', monospace",
+    },
+    "font_round": {
+        "label": "Rounded",
+        "import": "https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&display=swap",
+        "css_family": "'Fredoka', sans-serif",
+    },
+    "font_neon": {
+        "label": "Neon",
+        "import": "https://fonts.googleapis.com/css2?family=Monoton&display=swap",
+        "css_family": "'Monoton', cursive",
+    },
+    "font_script": {
+        "label": "Script",
+        "import": "https://fonts.googleapis.com/css2?family=Pacifico&display=swap",
+        "css_family": "'Pacifico', cursive",
+    },
+    "font_geo": {
+        "label": "Geo",
+        "import": "https://fonts.googleapis.com/css2?family=Righteous&display=swap",
+        "css_family": "'Righteous', sans-serif",
+    },
+}
+
+# ───────────────── Items & cosmetics (expanded) ─────────────────
+ITEM_DB = {
+    # boxes
+    "BOX_BRONZE": {"label": "Bronze Box", "icon": "📦"},
+    "BOX_SILVER": {"label": "Silver Box", "icon": "🎁"},
+    "BOX_GOLD": {"label": "Gold Box", "icon": "🗃️"},
+    # currency
+    "DUST": {"label": "Emoji Dust", "icon": "✨"},
+    # emoji items
+    "EMOJI_STAR": {"label": "Star", "icon": "⭐"},
+    "EMOJI_FIRE": {"label": "Fire", "icon": "🔥"},
+    "EMOJI_APPLE": {"label": "Apple", "icon": "🍎"},
+    "EMOJI_CROWN": {"label": "Crown", "icon": "👑"},
+    # voucher
+    "V_PICK_NEXT_GAME": {"label": "Voucher: Pick Next Game", "icon": "🎟️"},
+    # cosmetics — fonts
+    "font_arcade": {"label": "Font: Arcade", "icon": "🅰️"},
+    "font_clean": {"label": "Font: Clean", "icon": "🔡"},
+    "font_serif": {"label": "Font: Serif", "icon": "🔠"},
+    "font_hand": {"label": "Font: Handwritten", "icon": "✍️"},
+    "font_display": {"label": "Font: Display", "icon": "🆒"},
+    "font_mono": {"label": "Font: Mono", "icon": "💻"},
+    "font_round": {"label": "Font: Rounded", "icon": "🫧"},
+    "font_neon": {"label": "Font: Neon", "icon": "💡"},
+    "font_script": {"label": "Font: Script", "icon": "🖋️"},
+    "font_geo": {"label": "Font: Geo", "icon": "🔷"},
+    # cosmetics — badges/titles
+    "badge_star": {"label": "Badge: Star", "icon": "🌟"},
+    "badge_crown": {"label": "Badge: Crown", "icon": "👑"},
+    "badge_bolt": {"label": "Badge: Lightning", "icon": "⚡"},
+    "badge_skull": {"label": "Badge: Skull", "icon": "☠️"},
+    "title_emoji_hunter": {"label": "Title: Emoji Hunter", "icon": "🏹"},
+    "title_box_breaker": {"label": "Title: Box Breaker", "icon": "📦"},
+    "title_speedrunner": {"label": "Title: Speedrunner", "icon": "🏃‍♂️"},
+    "title_sharpshooter": {"label": "Title: Sharpshooter", "icon": "🎯"},
+}
+EMOJI_ITEM_POOL = ["EMOJI_STAR", "EMOJI_FIRE", "EMOJI_APPLE", "EMOJI_CROWN"]
+
+# ───────────────── Drop tables (heavier + cosmetics across all tiers) ─────────────────
+BOX_TABLES = {
+    "BOX_BRONZE": [
+        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 60, "qty": (1, 3)},
+        {"type": "inventory", "code": "DUST", "weight": 20, "qty": (6, 10)},
+        {"type": "cosmetic", "code": "font_clean", "weight": 7, "qty": 1},
+        {"type": "cosmetic", "code": "font_serif", "weight": 5, "qty": 1},
+        {
+            "type": "cosmetic",
+            "code": ["badge_star", "title_emoji_hunter"],
+            "weight": 8,
+            "qty": 1,
+        },
+    ],
+    "BOX_SILVER": [
+        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 45, "qty": (2, 5)},
+        {"type": "inventory", "code": "DUST", "weight": 25, "qty": (14, 20)},
+        {
+            "type": "cosmetic",
+            "code": ["font_serif", "font_hand", "badge_star", "title_emoji_hunter"],
+            "weight": 18,
+            "qty": 1,
+        },
+        {
+            "type": "cosmetic",
+            "code": ["font_arcade", "font_mono", "font_round"],
+            "weight": 12,
+            "qty": 1,
+        },
+    ],
+    "BOX_GOLD": [
+        {"type": "inventory", "code": "DUST", "weight": 30, "qty": (26, 36)},
+        {"type": "inventory", "code": EMOJI_ITEM_POOL, "weight": 30, "qty": (5, 8)},
+        {
+            "type": "cosmetic",
+            "code": [
+                "font_arcade",
+                "font_display",
+                "font_neon",
+                "font_geo",
+                "badge_crown",
+                "badge_bolt",
+                "title_box_breaker",
+                "title_speedrunner",
+                "title_sharpshooter",
+            ],
+            "weight": 30,
+            "qty": 1,
+        },
+        {"type": "inventory", "code": "V_PICK_NEXT_GAME", "weight": 10, "qty": 1},
+    ],
+}
+
+# ───────────────── Crafting (more routes to cosmetics) ─────────────────
+CRAFT_RECIPES: Dict[str, Dict[str, int]] = {
+    # badges/titles
+    "badge_star": {"EMOJI_STAR": 20},
+    "badge_bolt": {"EMOJI_FIRE": 25, "DUST": 30},
+    "badge_crown": {"EMOJI_CROWN": 15, "DUST": 40},
+    "title_emoji_hunter": {"EMOJI_STAR": 10, "EMOJI_APPLE": 10},
+    "title_box_breaker": {"EMOJI_APPLE": 20, "EMOJI_FIRE": 20},
+    "title_speedrunner": {"DUST": 120},
+    "title_sharpshooter": {"EMOJI_STAR": 15, "DUST": 60},
+    # fonts (let dust buy style)
+    "font_hand": {"DUST": 50},
+    "font_mono": {"DUST": 70},
+    "font_round": {"DUST": 70},
+    "font_script": {"DUST": 90},
+    "font_geo": {"DUST": 100},
+    "font_neon": {"DUST": 120},
+    "font_display": {"DUST": 140},
+    "font_arcade": {"DUST": 150},
 }
 
 
@@ -374,6 +513,77 @@ def _run_daily_awards_if_needed():
 # ─────────────────────────────────────────────────────────────────────────────
 # Locker: items, drops, crafting
 # ─────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
+# Economy helpers: pity, dup refund, JSON config overrides
+# ─────────────────────────────────────────────────────────────────────────────
+PITY_RULES = {  # cosmetic is guaranteed on or before these counts
+    "BOX_BRONZE": 10,
+    "BOX_SILVER": 7,
+    "BOX_GOLD": 4,
+}
+DUPLICATE_REFUND_DUST = {  # dust for dup cosmetics by category
+    "font": 60,
+    "badge": 40,
+    "title": 35,
+}
+
+
+def _cosmetic_kind(code: str) -> str:
+    if str(code).startswith("font_"):
+        return "font"
+    if str(code).startswith("badge_"):
+        return "badge"
+    if str(code).startswith("title_"):
+        return "title"
+    return "other"
+
+
+# ensure pity bucket in bag shape
+def _bag_get_pity(pid: str) -> Dict[str, int]:
+    bag = _get_player_bag(pid)
+    pit = bag.get("pity", {})
+    if not isinstance(pit, dict):
+        pit = {}
+    return {str(k): int(v) for k, v in pit.items()}
+
+
+def _bag_set_pity(pid: str, pity: Dict[str, int]) -> bool:
+    bag = _get_player_bag(pid)
+    bag["pity"] = pity
+    return _save_player_bag(pid, bag)
+
+
+# JSON config plumbing (stored in 'config' table)
+def _load_json_config(key: str, default_obj):
+    if not supabase:
+        return default_obj
+    try:
+        res = supabase.table("config").select("value").eq("key", key).limit(1).execute()
+        rows = res.data or []
+        if rows and rows[0].get("value"):
+            import json
+
+            return json.loads(rows[0]["value"])
+    except Exception:
+        pass
+    return default_obj
+
+
+def _save_json_config(key: str, obj) -> bool:
+    if not supabase:
+        st.error("Supabase not configured.")
+        return False
+    try:
+        import json
+
+        supabase.table("config").upsert(
+            {"key": key, "value": json.dumps(obj)}
+        ).execute()
+        return True
+    except Exception as e:
+        st.error(f"Failed to save '{key}': {e}")
+        return False
+
 
 # Catalog for pretty names/icons
 ITEM_DB = {
@@ -500,23 +710,58 @@ def _give_reward(pid: str, item_code: str, qty: int, is_cosmetic: bool) -> None:
 
 
 def _open_box_once(pid: str, box_code: str) -> Tuple[str, int, bool]:
-    table = BOX_TABLES.get(box_code)
+    """Single open with pity + duplicate→dust refund. Returns (code, qty, is_cosmetic)."""
+    table = BOX_TABLES.get(box_code, [])
     if not table:
         return ("DUST", 1, False)
-    prize = _weighted_pick(table)
+
+    # Pity check
+    pity = _bag_get_pity(pid)
+    pity_count = int(pity.get(box_code, 0))
+    force_cosmetic = False
+    if box_code in PITY_RULES:
+        force_cosmetic = (pity_count + 1) >= int(PITY_RULES[box_code])
+
+    # pick prize
+    entries = (
+        [e for e in table if e.get("type") == "cosmetic"] if force_cosmetic else table
+    )
+    prize = _weighted_pick(entries)
     code = _resolve_code(prize["code"])
     qty = _normalize_qty(prize.get("qty", 1))
     is_cosmetic = prize["type"] == "cosmetic"
-    _give_reward(pid, code, qty, is_cosmetic)
-    return (code, qty, is_cosmetic)
+
+    # Duplicate conversion
+    if is_cosmetic:
+        bag = _get_player_bag(pid)
+        owned = bag.get("cosmetics", {}).get("owned", [])
+        if code in owned:
+            kind = _cosmetic_kind(code)
+            refund = int(DUPLICATE_REFUND_DUST.get(kind, 25))
+            code, qty, is_cosmetic = "DUST", refund, False
+            pity[box_code] = pity_count + 1  # still counts toward pity
+            _bag_set_pity(pid, pity)
+            _bag_add(pid, code, qty)
+            return (code, qty, False)
+        else:
+            # success → reset pity and grant cosmetic
+            pity[box_code] = 0
+            _bag_set_pity(pid, pity)
+            _bag_add_owned_cosmetic(pid, code)
+            return (code, qty, True)
+
+    # Non-cosmetic → increment pity and grant item
+    pity[box_code] = pity_count + 1
+    _bag_set_pity(pid, pity)
+    _bag_add(pid, code, qty)
+    return (code, qty, False)
 
 
 def _open_boxes(pid: str, box_code: str, n: int) -> List[Tuple[str, int, bool]]:
     results = []
-    for _ in range(n):
+    for _ in range(int(n)):
         results.append(_open_box_once(pid, box_code))
-    # spend boxes after success
-    _bag_spend(pid, box_code, n)
+    _bag_spend(pid, box_code, int(n))  # spend after successful opens
     return results
 
 
@@ -2421,6 +2666,7 @@ if mode == "Admin":
             "Manage Sessions",
             "ELO Settings",
             "Approvals",
+            "Economy",
         ]
     )
     players_df = sb_select("players")
