@@ -1455,7 +1455,12 @@ def render_h2h_heatmap(h2h_df: pd.DataFrame, title: str = "Head-to-Head") -> Non
 def _range_to_df_tz(series: pd.Series, start_d, end_d):
     s = pd.to_datetime(start_d)
     e = pd.to_datetime(end_d) + pd.Timedelta(days=1) - pd.Timedelta(microseconds=1)
-    if pd.api.types.is_datetime64tz_dtype(series):
+
+    # Old (deprecated):
+    # if pd.api.types.is_datetime64tz_dtype(series):
+
+    # New:
+    if isinstance(getattr(series, "dtype", None), pd.DatetimeTZDtype):
         tz = series.dt.tz
         if s.tzinfo is None:
             s = s.tz_localize(tz)
@@ -2138,7 +2143,7 @@ if mode == "General":
                     rec.loc[g_.index, "resolved_winner"] = mask.values
                 winners_styled = (
                     rec[rec["resolved_winner"]]
-                    .groupby("session_id")
+                    .groupby("session_id")[["player_id", "player_name"]]
                     .apply(
                         lambda s: ", ".join(
                             sorted(
@@ -2264,6 +2269,12 @@ if mode == "General":
                 lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
                 lb_disp["🔥"] = np.where(lb_disp["current_streak"] >= 3, "🔥", "")
                 lb_disp["Win%"] = lb_disp["win_rate"] * 100.0
+
+                lb_disp["Player"] = (
+                    lb_disp["player_id"]
+                    .map(styled_by_pid)
+                    .fillna(lb_disp["display_name"])
+                )
 
                 show_cols = [
                     "#",
@@ -3392,247 +3403,208 @@ if mode == "Admin":
         else:
             # Most recent first
             req_df = req_df.sort_values("created_at", ascending=False)
-            players_df = sb_select("players")
-            games_df = sb_select("games")
-            id_to_player = dict(zip(players_df["id"], players_df["name"]))
-            name_to_id = dict(zip(players_df["name"], players_df["id"]))
-            id_to_game = dict(zip(games_df["id"], games_df["name"]))
+
+            players_df_ap = sb_select("players")
+            games_df_ap = sb_select("games")
+
+            id_to_player = dict(zip(players_df_ap["id"], players_df_ap["name"]))
+            name_to_id = dict(zip(players_df_ap["name"], players_df_ap["id"]))
+            id_to_game = dict(zip(games_df_ap["id"], games_df_ap["name"]))
             game_name_to_id = {v: k for k, v in id_to_game.items()}
+            all_player_names = sorted(players_df_ap["name"].tolist())
 
             for _, row in req_df.iterrows():
                 rid = row["id"]
-                payload = _as_dict(row["payload"])
+                payload = _as_dict(row.get("payload"))
                 status = (row.get("status") or "pending").lower()
                 if status != "pending":
                     continue
 
-                # Header
+                # Header line for the expander
                 game_nm = payload.get("game_name") or id_to_game.get(
                     payload.get("game_id"), "Unknown game"
                 )
                 submitted_by = row.get("created_by") or "Unknown"
-                when = payload.get("played_at", "—")
-                exp = st.expander(
-                    f"📝 {game_nm} • {when} • by {submitted_by}", expanded=False
-                )
+                when_iso = payload.get("played_at") or "—"
+                header = f"📝 {game_nm} • {when_iso} • by {submitted_by}"
 
-                with exp:
-                    # Editable header fields
-                    gcol1, gcol2 = st.columns([2, 1])
-                    new_game_name = gcol1.selectbox(
+                with st.expander(header, expanded=False):
+                    # --- Editable session header ---
+                    lcol, mcol, rcol = st.columns([2, 1, 1])
+
+                    game_names_list = list(id_to_game.values()) or ["(no games)"]
+                    try:
+                        initial_game_idx = game_names_list.index(game_nm)
+                    except ValueError:
+                        initial_game_idx = 0
+
+                    sel_game_name = lcol.selectbox(
                         "Game",
-                        options=list(id_to_game.values()),
-                        index=(
-                            list(id_to_game.values()).index(game_nm)
-                            if game_nm in id_to_game.values()
-                            else 0
-                        ),
+                        options=game_names_list,
+                        index=initial_game_idx,
                         key=f"ap_game_{rid}",
                     )
-                    new_date = gcol2.date_input(
-                        "Date",
-                        value=(
-                            pd.to_datetime(payload.get("played_at")).date()
-                            if payload.get("played_at")
-                            else date.today()
-                        ),
-                        key=f"ap_date_{rid}",
+                    sel_game_id = game_name_to_id.get(sel_game_name)
+
+                    # datetime
+                    try:
+                        dt_default = pd.to_datetime(when_iso)
+                        if pd.isna(dt_default):
+                            raise ValueError
+                    except Exception:
+                        dt_default = pd.Timestamp.now()
+
+                    d_val = mcol.date_input(
+                        "Date", value=dt_default.date(), key=f"ap_date_{rid}"
                     )
-                    new_time = gcol2.time_input(
+                    t_val = rcol.time_input(
                         "Time",
-                        value=(
-                            pd.to_datetime(payload.get("played_at")).time()
-                            if payload.get("played_at")
-                            else datetime.now().time()
-                        ),
+                        value=dt_default.time().replace(microsecond=0),
                         key=f"ap_time_{rid}",
                     )
-                    new_loc = gcol1.text_input(
+
+                    location_val = st.text_input(
                         "Location",
-                        value=payload.get("location") or "",
+                        value=(payload.get("location") or ""),
                         key=f"ap_loc_{rid}",
                     )
-                    new_notes = st.text_area(
-                        "Notes", value=payload.get("notes") or "", key=f"ap_notes_{rid}"
-                    )
-                    new_mode = st.radio(
-                        "Session type",
-                        ["Free-for-all (FFA)", "Team", "Co-op", "Solo"],
-                        index=["Free-for-all (FFA)", "Team", "Co-op", "Solo"].index(
-                            payload.get("mode", "Free-for-all (FFA)")
-                        ),
-                        horizontal=True,
-                        key=f"ap_mode_{rid}",
+                    notes_val = st.text_area(
+                        "Notes",
+                        value=(payload.get("notes") or ""),
+                        key=f"ap_notes_{rid}",
                     )
 
-                    # Editable participants
-                    ent = payload.get("entries", [])
-                    # Build a dataframe for editing
-                    edf = pd.DataFrame(ent)
-                    # map to display names
-                    if "player_id" in edf.columns and "pname" not in edf.columns:
-                        edf["pname"] = edf["player_id"].map(id_to_player)
+                    # --- Editable participant entries ---
+                    entries = payload.get("entries", []) or []
+                    if not entries:
+                        st.warning("No participant entries in this request.")
+                        edited = pd.DataFrame(
+                            columns=["pname", "team", "position", "points", "is_winner"]
+                        )
+                    else:
+                        edf = pd.DataFrame(entries)
+                        # normalize columns
+                        for col in ["pname", "team", "position", "points", "is_winner"]:
+                            if col not in edf.columns:
+                                edf[col] = None
+                        edf["pname"] = edf["pname"].astype(str)
+                        edf["team"] = edf["team"].fillna("").astype(str)
+                        edf["position"] = pd.to_numeric(
+                            edf["position"], errors="coerce"
+                        ).astype("Int64")
+                        edf["points"] = pd.to_numeric(
+                            edf["points"], errors="coerce"
+                        ).fillna(0.0)
+                        edf["is_winner"] = edf["is_winner"].fillna(False).astype(bool)
 
-                    # Let admin edit the grid
-                    edited = st.data_editor(
-                        edf[["pname", "team", "position", "points", "is_winner"]],
-                        use_container_width=True,
-                        num_rows="dynamic",
-                        column_config={
-                            "pname": st.column_config.SelectboxColumn(
-                                "Player", options=sorted(list(name_to_id.keys()))
-                            ),
-                            "team": st.column_config.TextColumn("Team"),
-                            "position": st.column_config.NumberColumn("Pos", step=1),
-                            "points": st.column_config.NumberColumn("Pts", step=1.0),
-                            "is_winner": st.column_config.CheckboxColumn("Winner"),
-                        },
-                        key=f"ap_grid_{rid}",
-                    )
+                        edited = st.data_editor(
+                            edf[["pname", "team", "position", "points", "is_winner"]],
+                            key=f"ap_editor_{rid}",
+                            use_container_width=True,
+                            num_rows="fixed",
+                            column_config={
+                                "pname": st.column_config.SelectboxColumn(
+                                    "Player",
+                                    options=all_player_names,
+                                    required=True,
+                                ),
+                                "team": st.column_config.TextColumn(
+                                    "Team",
+                                    help="Blank for FFA; label (A/B/… or COOP/SOLO) for team modes",
+                                ),
+                                "position": st.column_config.NumberColumn(
+                                    "Pos", min_value=1, max_value=99
+                                ),
+                                "points": st.column_config.NumberColumn(
+                                    "Pts", step=1.0
+                                ),
+                                "is_winner": st.column_config.CheckboxColumn("Winner"),
+                            },
+                        )
 
-                    # Actions
-                    acol1, acol2, acol3 = st.columns([1, 1, 2])
+                    # --- Actions ---
+                    ac1, ac2, ac3 = st.columns(3)
 
-                    # Save edits to request (does not approve)
-                    if acol1.button("Save edits", key=f"ap_save_{rid}"):
-                        # map back to ids
-                        new_entries = []
-                        for _, r in edited.iterrows():
-                            pid = name_to_id.get(r["pname"])
-                            if not pid:
-                                st.error(f"Unknown player: {r['pname']}")
-                                st.stop()
-                            new_entries.append(
-                                {
-                                    "pname": r["pname"],
-                                    "player_id": pid,
-                                    "team": (r.get("team") or ""),
-                                    "position": (
-                                        int(r["position"])
-                                        if pd.notna(r["position"])
-                                        else None
-                                    ),
-                                    "points": (
-                                        float(r["points"])
-                                        if pd.notna(r["points"])
-                                        else None
-                                    ),
-                                    "is_winner": bool(r["is_winner"]),
-                                }
-                            )
+                    if ac1.button("✅ Approve & Save", key=f"ap_btn_approve_{rid}"):
+                        # Compose session
+                        try:
+                            played_at_dt = datetime.combine(d_val, t_val)
+                        except Exception:
+                            st.error("Invalid date/time.")
+                            st.stop()
 
-                        new_payload = {
-                            "game_id": game_name_to_id.get(
-                                new_game_name, payload.get("game_id")
-                            ),
-                            "game_name": new_game_name,
-                            "played_at": datetime.combine(
-                                new_date, new_time
-                            ).isoformat(),
-                            "location": new_loc.strip() or None,
-                            "notes": new_notes.strip() or None,
-                            "mode": new_mode,
-                            "entries": new_entries,
-                        }
-                        if sb_update_by_id(
-                            "session_requests", rid, {"payload": new_payload}
-                        ):
-                            st.success("Saved edits.")
-                            st.cache_data.clear()
-
-                            # Approve → insert into real tables then delete request
-
-                    def _approve_request(_payload):
                         sid = _uuid()
-                        ok = sb_insert(
+                        ok_session = sb_insert(
                             "sessions",
                             {
                                 "id": sid,
-                                "game_id": _payload["game_id"],
-                                "played_at": _payload["played_at"],
-                                "location": _payload.get("location"),
-                                "notes": _payload.get("notes"),
+                                "game_id": sel_game_id,
+                                "played_at": played_at_dt.isoformat(),
+                                "location": (location_val or "").strip() or None,
+                                "notes": (notes_val or "").strip() or None,
                             },
                         )
-                        if not ok:
-                            return False
+                        if not ok_session:
+                            st.error("Failed to create session.")
+                            st.stop()
 
                         all_ok = True
-                        for e in _payload.get("entries", []):
-                            row = {
+                        for e in edited.to_dict("records"):
+                            pid = name_to_id.get(e["pname"])
+                            if not pid:
+                                st.error(f"Unknown player: {e['pname']}")
+                                all_ok = False
+                                break
+                            row_sp = {
                                 "id": _uuid(),
                                 "session_id": sid,
-                                "player_id": e["player_id"],
+                                "player_id": pid,
                                 "team": (e.get("team") or None),
-                                "position": e.get("position"),
-                                "points": e.get("points"),
+                                "position": (
+                                    int(e["position"])
+                                    if pd.notna(e["position"])
+                                    else None
+                                ),
+                                "points": float(e.get("points") or 0.0),
                                 "is_winner": bool(e.get("is_winner", False)),
                             }
-                            if not sb_insert("session_players", row):
+                            if not sb_insert("session_players", row_sp):
                                 all_ok = False
+                                break
 
                         if all_ok:
-                            # Mark approved and remove request from inbox
                             sb_update_by_id(
-                                "session_requests", rid, {"status": "approved"}
-                            )
-                            sb_delete_by_id("session_requests", rid)
-                            st.cache_data.clear()
-                            return True
-                        else:
-                            # Roll back the session shell if participants failed
-                            sb_delete_by_id("sessions", sid)
-                            return False
-
-                    # APPROVE (uses current UI state, no need to click "Save edits" first)
-                    if acol2.button("Approve", key=f"ap_approve_{rid}"):
-                        new_entries = []
-                        for _, r in edited.iterrows():
-                            pid = name_to_id.get(r["pname"])
-                            if not pid:
-                                st.error(f"Unknown player: {r['pname']}")
-                                st.stop()
-                            new_entries.append(
+                                "session_requests",
+                                rid,
                                 {
-                                    "player_id": pid,
-                                    "team": (r.get("team") or ""),
-                                    "position": (
-                                        int(r["position"])
-                                        if pd.notna(r["position"])
-                                        else None
-                                    ),
-                                    "points": (
-                                        float(r["points"])
-                                        if pd.notna(r["points"])
-                                        else None
-                                    ),
-                                    "is_winner": bool(r.get("is_winner", False)),
-                                }
+                                    "status": "approved",
+                                    "processed_at": datetime.utcnow().isoformat(),
+                                },
+                            )
+                            st.success(
+                                "Approved. Session created and request marked as approved."
+                            )
+                            st.cache_data.clear()
+                        else:
+                            st.error(
+                                "Some participant rows failed to save. The session may be partial. Review errors above."
                             )
 
-                        payload_to_approve = {
-                            "game_id": game_name_to_id.get(
-                                new_game_name, payload.get("game_id")
-                            ),
-                            "played_at": datetime.combine(
-                                new_date, new_time
-                            ).isoformat(),
-                            "location": new_loc.strip() or None,
-                            "notes": new_notes.strip() or None,
-                            "entries": new_entries,
-                        }
-
-                        if _approve_request(payload_to_approve):
-                            st.success("Approved – session created.")
-                        else:
-                            st.error("Approve failed; nothing saved.")
-
-                    # REJECT
-                    if acol3.button("Reject", key=f"ap_reject_{rid}"):
+                    if ac2.button("❌ Reject", key=f"ap_btn_reject_{rid}"):
                         if sb_update_by_id(
-                            "session_requests", rid, {"status": "rejected"}
+                            "session_requests",
+                            rid,
+                            {
+                                "status": "rejected",
+                                "processed_at": datetime.utcnow().isoformat(),
+                            },
                         ):
-                            st.warning("Request rejected.")
+                            st.info("Request rejected.")
+                            st.cache_data.clear()
+
+                    if ac3.button("🗑️ Delete", key=f"ap_btn_delete_{rid}"):
+                        if sb_delete_by_id("session_requests", rid):
+                            st.warning("Request deleted.")
                             st.cache_data.clear()
 
     # ------------------------- Economy / Bag Management -------------------------
