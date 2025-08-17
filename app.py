@@ -595,9 +595,6 @@ def _save_json_config(key: str, obj) -> bool:
         return False
 
 
-EMOJI_ITEM_POOL = ["EMOJI_STAR", "EMOJI_FIRE", "EMOJI_APPLE", "EMOJI_CROWN"]
-
-
 def _item_label(code: str) -> str:
     meta = ITEM_DB.get(code, {"label": code, "icon": "•"})
     return f"{meta.get('icon','•')} {meta.get('label',code)}"
