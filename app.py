@@ -260,7 +260,8 @@ def _yesterday_key_utc() -> str:
     return day.strftime("%Y-%m-%d")
 
 
-def _inject_font_css(font_code: Optional[str]):
+def _inject_font_css(font_code: Optional[str], scope_class: Optional[str] = None):
+    """Inject a font only for elements within .{scope_class}. Does nothing if no font."""
     if not font_code:
         return
     font = FONT_CATALOG.get(font_code)
@@ -269,16 +270,25 @@ def _inject_font_css(font_code: Optional[str]):
     st.markdown(
         f"<link href='{font['import']}' rel='stylesheet'>", unsafe_allow_html=True
     )
+    selector = f".{scope_class}" if scope_class else ".cosmetic-font"
     st.markdown(
-        f"""
-        <style>
-        .player-nameplate, .cosmetic-font {{
-            font-family: {font['css_family']} !important;
-        }}
-        </style>
-        """,
+        f"<style>{selector}{{font-family:{font['css_family']} !important;}}</style>",
         unsafe_allow_html=True,
     )
+
+
+def _equipped_for_player(pid: str) -> Dict[str, Optional[str]]:
+    bag = _get_player_bag(pid)
+    eq = bag.get("cosmetics", {}).get("equipped", {})
+    return {"font": eq.get("font"), "badge": eq.get("badge"), "title": eq.get("title")}
+
+
+def _title_text(code: Optional[str]) -> str:
+    if not code:
+        return ""
+    lab = ITEM_DB.get(code, {}).get("label", "")
+    # ITEM_DB labels are like "Title: Emoji Hunter" — show just the title text
+    return lab.replace("Title: ", "") if lab.startswith("Title: ") else lab
 
 
 def _row_to_bag(bag_any: Any) -> Dict[str, Any]:
@@ -1560,15 +1570,27 @@ def render_daily_game():
     c_head = st.container()
     with c_head:
         colA, colB, colC = st.columns([2, 1, 1])
-        colA.subheader(f"Hi, {players_df.set_index('id').loc[pid, 'name']}!")
+
+        # ⬇️ use only the styled header (delete the earlier unstyled colA.subheader line)
+        eq = _equipped_for_player(pid)
+        scope = f"pfont-{pid}"
+        _inject_font_css(eq.get("font"), scope)
+        colA.subheader(
+            f"<span class='{scope}'>Hi, {players_df.set_index('id').loc[pid, 'name']}!</span>",
+            unsafe_allow_html=True,
+        )
+
         colB.metric("Best today", best_today)
         colC.metric("Resets (UTC)", f"{DAY_ROLLOVER_HOUR_UTC:02d}:00")
 
     # Load font cosmetic for header
-    bag = _get_player_bag(pid)
-    equipped_font = bag.get("cosmetics", {}).get("equipped", {}).get("font")
-    _inject_font_css(equipped_font)
-
+    eq = _equipped_for_player(pid)
+    scope = f"pfont-{pid}"
+    _inject_font_css(eq.get("font"), scope)
+    colA.subheader(
+        f"<span class='{scope}'>Hi, {players_df.set_index('id').loc[pid, 'name']}!</span>",
+        unsafe_allow_html=True,
+    )
     # Run state
     state = st.session_state.setdefault("oeo_state", {})
     running = bool(state.get("running", False))
@@ -1696,16 +1718,17 @@ def render_locker():
 
     # Nameplate
     pname = players_df.set_index("id").loc[pid, "name"]
+    scope = f"pfont-{pid}"
+    _inject_font_css(eq.get("font"), scope)
     st.markdown(
         f"""
-        <div class="player-nameplate" style="
-            padding: 12px 16px; border-radius: 10px;
-            background: rgba(240,240,240,0.6);
-            border: 2px solid #ddd; display:inline-block;">
-            <div style="font-size: 20px; font-weight: 700;">{pname}</div>
-            <div style="font-size: 13px; opacity: 0.8;">
+        <div class="player-nameplate {scope}" style="
+            padding:12px 16px;border-radius:10px;background:rgba(240,240,240,0.6);
+            border:2px solid #ddd;display:inline-block;">
+            <div style="font-size:20px;font-weight:700;">{pname}</div>
+            <div style="font-size:13px;opacity:0.8;">
                 {ITEM_DB.get(eq.get('badge',''),{}).get('icon','')} {ITEM_DB.get(eq.get('badge',''),{}).get('label','No badge')}
-                 • {ITEM_DB.get(eq.get('title',''),{}).get('label','No title')}
+                • {ITEM_DB.get(eq.get('title',''),{}).get('label','No title')}
             </div>
         </div>
         """,
@@ -2047,6 +2070,99 @@ if mode == "General":
                 exceptional_points=float(cfg["exceptional_points"]),
             )
 
+            # Cosmetics map for players
+            players_df_all = sb_select("players")
+            eq_map: Dict[str, Dict[str, Optional[str]]] = {}
+            if not players_df_all.empty and "bag" in players_df_all.columns:
+                for _, r in players_df_all.iterrows():
+                    pid = r["id"]
+                    bag = _as_dict(r.get("bag"))
+                    eq_map[pid] = (
+                        bag.get("cosmetics", {}).get("equipped", {})
+                        if isinstance(bag, dict)
+                        else {}
+                    )
+
+            def _styled_name(pid: str, base_name: str) -> str:
+                eq = eq_map.get(pid, {})
+                badge_icon = ITEM_DB.get(eq.get("badge", ""), {}).get("icon", "")
+                title_txt = _title_text(eq.get("title"))
+                left = (badge_icon + " ") if badge_icon else ""
+                right = f" ({title_txt})" if title_txt else ""
+                return f"{left}{base_name}{right}"
+
+            # Styled names for current leaderboard players
+            styled_by_pid = {
+                row["player_id"]: _styled_name(row["player_id"], row["display_name"])
+                for _, row in lb.iterrows()
+            }
+
+            # 1) Leaderboard table column: use styled text
+            lb_disp = lb.copy()
+            lb_disp.insert(0, "#", np.arange(1, len(lb_disp) + 1))
+            medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+            lb_disp.insert(1, "🏅", lb_disp["#"].map(medals).fillna(""))
+            lb_disp["🔥"] = np.where(lb_disp["current_streak"] >= 3, "🔥", "")
+            lb_disp["Win%"] = lb_disp["win_rate"] * 100.0
+            lb_disp["Player"] = (
+                lb_disp["player_id"].map(styled_by_pid).fillna(lb_disp["display_name"])
+            )
+
+            # 1a) (Optional) Compact roster preview with real fonts (top 12)
+            st.caption("Styled roster (shows fonts, badges, titles):")
+            roster_cols = st.columns(3)
+            for i, (pid, disp) in enumerate(styled_by_pid.items()):
+                scope = f"pfont-{pid}"
+                _inject_font_css(eq_map.get(pid, {}).get("font"), scope)
+                roster_cols[i % 3].markdown(
+                    f"<div class='{scope}'>{disp}</div>", unsafe_allow_html=True
+                )
+
+            # 2) H2H labels: replace index/columns with styled names
+            labels = [
+                styled_by_pid.get(pid, nm)
+                for pid, nm in zip(lb["player_id"], lb["display_name"])
+            ]
+            if not h2h.empty:
+                h2h.index = labels
+                h2h.columns = labels
+
+            # 3) Recent winners: use styled names
+            if not recent.empty:
+                # recent already has resolved_winner earlier; rebuild winners with styled names
+                rec = joined.copy()
+                rec = rec[rec["session_id"].isin(recent["session_id"].unique())]
+                rec["resolved_winner"] = False
+                for sid, g_ in rec.groupby("session_id", sort=False):
+                    mask = resolve_winners(g_)
+                    rec.loc[g_.index, "resolved_winner"] = mask.values
+                winners_styled = (
+                    rec[rec["resolved_winner"]]
+                    .groupby("session_id")
+                    .apply(
+                        lambda s: ", ".join(
+                            sorted(
+                                set(
+                                    _styled_name(pid, nm)
+                                    for pid, nm in zip(s["player_id"], s["player_name"])
+                                )
+                            )
+                        )
+                    )
+                    .rename("winners")
+                )
+                recent = recent.drop(columns=["winners"], errors="ignore").merge(
+                    winners_styled, left_on="session_id", right_index=True, how="left"
+                )
+
+            # 4) Ratings-over-time: show styled names in legend and selector
+            if not ratings_over_time.empty:
+                ratings_over_time["player_name"] = (
+                    ratings_over_time["player_id"]
+                    .map(styled_by_pid)
+                    .fillna(ratings_over_time["player_name"])
+                )
+
             if lb.empty:
                 st.info("No data for current filters.")
             else:
@@ -2099,43 +2215,41 @@ if mode == "General":
                         unsafe_allow_html=True,
                     )
 
+                def _pretty(row):
+                    if row is None:
+                        return None
+                    return styled_by_pid.get(row["player_id"], row["display_name"])
+
                 with cA:
                     metric_card(
                         "🏆 Champion",
-                        champ["display_name"] if champ is not None else None,
+                        _pretty(champ),
                         f"ELO {champ['elo']:.0f}" if champ is not None else None,
                     )
-
                 with cB:
                     metric_card(
                         "🔥 Longest Streak",
-                        longest["display_name"] if longest is not None else None,
+                        _pretty(longest),
                         (
                             f"{int(longest['best_streak'])} wins"
                             if longest is not None
                             else None
                         ),
                     )
-
                 with cC:
                     metric_card(
                         "🎯 Best Win% (≥3 GP)",
-                        best_wr["display_name"] if best_wr is not None else None,
+                        _pretty(best_wr),
                         (
                             f"{best_wr['win_rate']*100:.0f}%"
                             if best_wr is not None
                             else None
                         ),
                     )
-
                 with cD:
                     metric_card(
                         "👥 Most Active",
-                        (
-                            most_active["display_name"]
-                            if most_active is not None
-                            else None
-                        ),
+                        _pretty(most_active),
                         (
                             f"{int(most_active['games_played'])} GP"
                             if most_active is not None
@@ -2168,17 +2282,33 @@ if mode == "General":
                 ]
 
                 st.subheader("Leaderboard")
+
+                show_cols = [
+                    "#",
+                    "🏅",
+                    "Player",
+                    "elo",
+                    "wins",
+                    "games_played",
+                    "Win%",
+                    "avg_position",
+                    "avg_points",
+                    "current_streak",
+                    "best_streak",
+                    "last_played",
+                    "🔥",
+                ]
+
                 st.dataframe(
                     lb_disp[show_cols].rename(
                         columns={
-                            "display_name": "Player",
-                            "games_played": "GP",
+                            "elo": "ELO",
                             "wins": "W",
+                            "games_played": "GP",
                             "avg_position": "Avg Pos",
                             "avg_points": "Avg Pts",
                             "current_streak": "Streak",
                             "best_streak": "Best Streak",
-                            "elo": "ELO",
                             "last_played": "Last",
                         }
                     ),
@@ -2219,7 +2349,7 @@ if mode == "General":
                 st.subheader("📈 Player Rating Over Time")
 
                 # Choose players (defaults to top 3 by current ELO)
-                player_opts = lb["display_name"].tolist()
+                player_opts = lb_disp["Player"].tolist()
                 default_sel = player_opts[:3]
                 selected_players_rt = st.multiselect(
                     "Select players",
@@ -2303,49 +2433,109 @@ if mode == "General":
             pmap = dict(zip(players_df["name"], players_df["id"]))
             selected_name = st.selectbox("Select a player", options=sorted(pmap.keys()))
             pid = pmap[selected_name]
+            eq = _equipped_for_player(pid)
+            scope = f"pfont-{pid}"
+            _inject_font_css(eq.get("font"), scope)
+
+            # Stats from the same ELO engine used in General
+            joined_all = sb_select_sessions_joined()
+            cfg = load_config()
+            lb_all, _, _, _ = compute_leaderboard(
+                joined_all,
+                None,
+                None,
+                base_rating=float(cfg["starting_elo"]),
+                k_ffa_base=float(cfg["k_ffa_base"]),
+                k_team=float(cfg["k_team"]),
+                coop_drift=float(cfg["coop_drift"]),
+                solo_drift=float(cfg["solo_drift"]),
+                use_points_weight=bool(cfg["use_points_weight"]),
+                points_alpha=float(cfg["points_alpha"]),
+                gap_bonus=bool(cfg["gap_bonus"]),
+                gap_bonus_coeff=float(cfg["gap_bonus_coeff"]),
+                exceptional_bonus=bool(cfg["exceptional_bonus"]),
+                exceptional_threshold=float(cfg["exceptional_threshold"]),
+                exceptional_points=float(cfg["exceptional_points"]),
+            )
+            row = (
+                lb_all[lb_all["player_id"] == pid].iloc[0]
+                if not lb_all.empty and (lb_all["player_id"] == pid).any()
+                else None
+            )
+
+            # Best game (by Win% with ≥3 games; fallback to most wins)
+            best_game_txt = "—"
+            if not joined_all.empty:
+                g = joined_all.copy()
+                g["resolved_winner"] = False
+                for sid, gg in g.groupby("session_id", sort=False):
+                    mask = resolve_winners(gg)
+                    g.loc[gg.index, "resolved_winner"] = mask.values
+                me = g[g["player_id"] == pid]
+                if not me.empty:
+                    per_game = me.groupby("game_name").agg(
+                        GP=("session_id", pd.Series.nunique),
+                        W=("resolved_winner", "sum"),
+                    )
+                    if not per_game.empty:
+                        per_game["WR"] = (per_game["W"] / per_game["GP"]).fillna(0.0)
+                        candidates = per_game[per_game["GP"] >= 3]
+                        pick = candidates.sort_values(
+                            ["WR", "GP", "W"], ascending=[False, False, False]
+                        ).head(1)
+                        if pick.empty:
+                            pick = per_game.sort_values(
+                                ["W", "GP", "WR"], ascending=[False, False, False]
+                            ).head(1)
+                        if not pick.empty:
+                            gname = pick.index[0]
+                            WR = pick["WR"].iloc[0] * 100
+                            GP = int(pick["GP"].iloc[0])
+                            best_game_txt = f"{gname} ({WR:.0f}% WR, {GP} GP)"
+
+            # Nameplate
+            title_txt = _title_text(eq.get("title"))
+            badge_icon = ITEM_DB.get(eq.get("badge", ""), {}).get("icon", "")
+            st.markdown(
+                f"""
+                <div class="player-nameplate {scope}" style="
+                    padding:12px 16px;border-radius:10px;background:rgba(240,240,240,0.6);
+                    border:2px solid #ddd;display:inline-block;">
+                    <div style="font-size:20px;font-weight:700;">{selected_name}</div>
+                    <div style="font-size:13px;opacity:0.8;">{badge_icon} {title_txt or 'No title'}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            st.write("")
+            k1, k2, k3, k4 = st.columns(4)
+            k1.metric("ELO", f"{row['elo']:.0f}" if row is not None else "—")
+            k2.metric("Win%", f"{row['win_rate']*100:.0f}%" if row is not None else "—")
+            k3.metric(
+                "Games Played", int(row["games_played"]) if row is not None else 0
+            )
+            k4.metric("Best Streak", int(row["best_streak"]) if row is not None else 0)
+
+            st.caption(f"⭐ Best game: {best_game_txt}")
+
+            # Cosmetics & inventory (compact)
             bag = _get_player_bag(pid)
             owned = bag.get("cosmetics", {}).get("owned", [])
-            eq = bag.get("cosmetics", {}).get("equipped", {})
             inv = bag.get("inventory", {})
-
-            # font preview
-            equipped_font = eq.get("font")
-            _inject_font_css(equipped_font)
-
-            cA, cB = st.columns([2, 1])
-            with cA:
-                st.markdown(
-                    f"""
-                    <div class="player-nameplate" style="
-                        padding: 12px 16px; border-radius: 10px;
-                        background: rgba(240,240,240,0.6);
-                        border: 2px solid #ddd; display:inline-block;">
-                        <div style="font-size: 20px; font-weight: 700;">{selected_name}</div>
-                        <div style="font-size: 13px; opacity: 0.8;">Badge: {eq.get('badge','—')} • Title: {eq.get('title','—')}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-                st.write("")
-                st.markdown("**Equipped**")
-                st.write(eq or "—")
-                st.markdown("**Owned cosmetics**")
-                st.write(owned or "—")
-            with cB:
-                st.markdown("**Inventory** (boxes/items)")
-                if inv:
-                    inv_df = pd.DataFrame(
-                        [{"Item": k, "Qty": v} for k, v in inv.items()]
-                    )
-                    st.dataframe(inv_df, use_container_width=True, hide_index=True)
-                else:
-                    st.caption("Empty")
-            st.caption(
-                "Profiles here are view-only. Admins can edit in Admin ▸ Players."
-            )
-        # ===== TAB 4: Locker (open, craft, equip) =====
-    with tabs_general[3]:
-        render_locker()
+            st.markdown("**Equipped**")
+            st.write({k: v for k, v in _equipped_for_player(pid).items() if v} or "—")
+            st.markdown("**Owned cosmetics**")
+            st.write(owned or "—")
+            st.markdown("**Inventory** (boxes/items)")
+            if inv:
+                inv_df = pd.DataFrame([{"Item": k, "Qty": v} for k, v in inv.items()])
+                st.dataframe(inv_df, use_container_width=True, hide_index=True)
+            else:
+                st.caption("Empty")
+            # ===== TAB 4: Locker (open, craft, equip) =====
+        with tabs_general[3]:
+            render_locker()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Moderator (submit session requests only)
