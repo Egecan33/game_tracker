@@ -1588,19 +1588,22 @@ def render_daily_game():
     except Exception:
         pass
 
-    c_head = st.container()
-    with c_head:
+    # Header (styled name, metrics)
+    with st.container():
         colA, colB, colC = st.columns([2, 1, 1])
 
         eq = _equipped_for_player(pid)
         scope = f"pfont-{pid}"
         _inject_font_css(eq.get("font"), scope)
 
-        # safer name lookup (no KeyError if something is off)
-        name_map = players_df.set_index("id")["name"] if not players_df.empty else {}
-        pname = (name_map.get(pid) if hasattr(name_map, "get") else None) or "Player"
+        # Safer name lookup (no KeyError if missing)
+        pname = "Player"
+        try:
+            if not players_df.empty and {"id", "name"} <= set(players_df.columns):
+                pname = str(players_df.set_index("id")["name"].get(pid) or "Player")
+        except Exception:
+            pass
 
-        # use markdown with HTML + class for the font
         colA.markdown(
             f"<h3 class='{scope}' style='margin:0;'>Hi, {pname}!</h3>",
             unsafe_allow_html=True,
@@ -1608,27 +1611,20 @@ def render_daily_game():
         colB.metric("Best today", best_today)
         colC.metric("Resets (UTC)", f"{DAY_ROLLOVER_HOUR_UTC:02d}:00")
 
-    # Load font cosmetic for header
-    eq = _equipped_for_player(pid)
-    scope = f"pfont-{pid}"
-    _inject_font_css(eq.get("font"), scope)
-    colA.subheader(
-        f"<span class='{scope}'>Hi, {players_df.set_index('id').loc[pid, 'name']}!</span>",
-        unsafe_allow_html=True,
-    )
-    # Run state
+    # ---- Run state ----
     state = st.session_state.setdefault("oeo_state", {})
     running = bool(state.get("running", False))
     cooldown_until = state.get("cooldown_until")
 
-    # start button (with concurrency lock: 70s after last start)
+    # Start button (with a 70s cooldown from last start)
     now = _utc_now()
     locked = bool(cooldown_until and now < cooldown_until)
+
     if not running:
         st.markdown("Find the **one** odd emoji in the grid. You have **60 seconds**.")
         st.caption("Tip: difficulty ramps up as you score more.")
         if locked:
-            remain = int((cooldown_until - now).total_seconds())
+            remain = max(0, int((cooldown_until - now).total_seconds()))
             st.warning(f"Please wait {remain}s before starting another run.")
         if st.button("▶️ Start 60-second run", disabled=locked):
             state.clear()
@@ -1658,14 +1654,14 @@ def render_daily_game():
             # Header bar with countdown + score
             b1, b2 = st.columns([1, 1])
             b1.subheader(f"⏳ {time_left}s left")
-            b2.subheader(f"🏅 Score: {state.get('score',0)}")
+            b2.subheader(f"🏅 Score: {state.get('score', 0)}")
 
-            n = state.get("grid_n", OEO_START_GRID)
+            n = int(state.get("grid_n", OEO_START_GRID))
             base, odd = state.get("pair", ("🍎", "🍏"))
             tr, tc = state.get("target", (0, 0))
-            rid = state.get("round_id")
+            rid = state.get("round_id") or _uuid()  # fallback for old state
 
-            # draw grid of buttons
+            # Draw grid of buttons
             clicked = None
             for r in range(n):
                 cols = st.columns(n)
@@ -1675,7 +1671,7 @@ def render_daily_game():
                     if cols[c].button(em, key=f"oeo_btn_{rid}_{r}_{c}"):
                         clicked = (r, c)
 
-            # handle click
+            # Handle click
             if clicked is not None:
                 state["rounds_played"] = int(state.get("rounds_played", 0)) + 1
                 if clicked == (tr, tc):
@@ -1701,11 +1697,12 @@ def render_daily_game():
             if best_rows:
                 df = pd.DataFrame(best_rows)
                 names = sb_select("players")[["id", "name"]]
-                df = df.merge(
-                    names.rename(columns={"id": "player_id"}),
-                    on="player_id",
-                    how="left",
-                )
+                if not names.empty:
+                    df = df.merge(
+                        names.rename(columns={"id": "player_id"}),
+                        on="player_id",
+                        how="left",
+                    )
                 df = df.rename(columns={"name": "Player", "score": "Score"})
                 df.insert(0, "#", np.arange(1, len(df) + 1))
                 st.dataframe(
@@ -2206,7 +2203,11 @@ if mode == "General":
                 if no_games_selected:
                     st.info("No games selected. Pick one or click **All games**.")
                 else:
-                    st.info("No data for current filters.")
+                    st.info(
+                        "No games selected."
+                        if selected_games == []
+                        else "No data for current filters."
+                    )
             else:
                 # KPI
                 k1, k2, k3, k4 = st.columns(4)
