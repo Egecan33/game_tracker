@@ -1,14 +1,14 @@
 # galios_den_game.py
 # -----------------------------------------------------------------------------
-# Galio's Den - Daily Mini-Game for Streamlit (fixed + snappy)
+# Galio's Den - Daily Mini-Game for Streamlit (snappy transitions)
 # - Unlimited time per run
 # - No save during combat; save/exit only on victory (death auto-saves 0)
 # - Mercy auto-saves ceil(score/2) and ends run
 # - Uncapped HP
-# - Streamlit-native rerun only (no manual st.rerun)
+# - Targeted reruns ONLY on screen transitions for instant refresh
 # - Unique button keys (no DuplicateElementId)
 # - UTC-aware timestamps
-# - Leaderboard: score desc, time asc
+# - Leaderboard: highest score, then shortest time
 # -----------------------------------------------------------------------------
 
 from __future__ import annotations
@@ -261,6 +261,8 @@ def render_galios_den_game(
                     "force_score_override": None,
                 }
             )
+            # Instant transition to first fight
+            st.experimental_rerun()
 
         st.divider()
     else:
@@ -294,17 +296,17 @@ def render_game_interface(
     # Ended (health <= 0) → auto-save (0 unless a mercy override was set)
     if int(state.get("health", 0)) <= 0:
         if not state.get("_saved_once", False):
-            # Default death score = 0 unless mercy override exists
             if state.get("force_score_override") is None:
-                state["force_score_override"] = 0
+                state["force_score_override"] = 0  # death = zero score
             _galios_den_finalize_and_save(
                 state, pid, supabase, _today_key_utc, _set_best_of_day
             )
             state["_saved_once"] = True
-            st.success("💾 Score saved. Thanks for playing!")
-            st.balloons()
-        # Reset to landing view (next native rerun shows start screen)
+        # Reset to landing view and show it immediately
+        st.success("💾 Score saved. Thanks for playing!")
+        st.balloons()
         state.clear()
+        st.experimental_rerun()
         return
 
     # Screen routing
@@ -377,6 +379,12 @@ def render_combat_screen(
             "⚔️ Attack", type="primary", width="stretch", key=_btn_key(state, "attack")
         ):
             handle_attack(state)
+            # If the action transitions screens, refresh immediately
+            if (
+                int(state.get("health", 0)) <= 0
+                or state.get("combat_state") == "victory"
+            ):
+                st.experimental_rerun()
 
     with col2:
         potions = int(state.get("num_health_potions", 0))
@@ -388,6 +396,7 @@ def render_combat_screen(
             key=_btn_key(state, "heal"),
         ):
             handle_heal(state)
+            # Staying in same screen is fine; no forced rerun
 
     with col3:
         if enemy == "Gatekeeper Galio":
@@ -397,9 +406,12 @@ def render_combat_screen(
                 handle_beg_forgiveness(
                     state, pid, supabase, _today_key_utc, _set_best_of_day
                 )
+                # Mercy ends run immediately; death also ends
+                st.experimental_rerun()
         else:
             if st.button("🏃 Run Away", width="stretch", key=_btn_key(state, "run")):
                 handle_run_away(state)
+                st.experimental_rerun()
 
 
 def handle_attack(state: Dict[str, Any]) -> None:
@@ -484,8 +496,6 @@ def handle_beg_forgiveness(
                 state, pid, supabase, _today_key_utc, _set_best_of_day
             )
             state["_saved_once"] = True
-            st.success("💾 Score saved by Galio's mercy!")
-            st.balloons()
         state.clear()  # end run now
     else:
         state["message"] = "💀 He smashed you in pieces. Galio has no mercy!"
@@ -536,7 +546,7 @@ def render_victory_screen(
         else:
             state["message"] = "⚔️ You continue your adventure!"
         state["combat_state"] = None
-        return  # native rerun will spawn next enemy
+        st.experimental_rerun()
 
     if c2.button(
         "🚪 Exit Dungeon (no save)",
@@ -545,7 +555,7 @@ def render_victory_screen(
     ):
         st.warning("Run discarded.")
         state.clear()
-        return
+        st.experimental_rerun()
 
     if c3.button(
         "💾 Save Score & Exit", width="stretch", key=_btn_key(state, "vict_save_exit")
@@ -556,7 +566,7 @@ def render_victory_screen(
         st.success("Saved! See you next time.")
         st.balloons()
         state.clear()
-        return
+        st.experimental_rerun()
 
 
 # --------------------------- Leaderboard -------------------------------------
