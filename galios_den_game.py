@@ -262,7 +262,7 @@ def render_galios_den_game(
                 }
             )
             # Instant transition to first fight
-            st.experimental_rerun()
+            st.rerun()
 
         st.divider()
     else:
@@ -306,7 +306,7 @@ def render_game_interface(
         st.success("💾 Score saved. Thanks for playing!")
         st.balloons()
         state.clear()
-        st.experimental_rerun()
+        st.rerun()
         return
 
     # Screen routing
@@ -384,7 +384,7 @@ def render_combat_screen(
                 int(state.get("health", 0)) <= 0
                 or state.get("combat_state") == "victory"
             ):
-                st.experimental_rerun()
+                st.rerun()
 
     with col2:
         potions = int(state.get("num_health_potions", 0))
@@ -407,11 +407,11 @@ def render_combat_screen(
                     state, pid, supabase, _today_key_utc, _set_best_of_day
                 )
                 # Mercy ends run immediately; death also ends
-                st.experimental_rerun()
+                st.rerun()
         else:
             if st.button("🏃 Run Away", width="stretch", key=_btn_key(state, "run")):
                 handle_run_away(state)
-                st.experimental_rerun()
+                st.rerun()
 
 
 def handle_attack(state: Dict[str, Any]) -> None:
@@ -546,7 +546,7 @@ def render_victory_screen(
         else:
             state["message"] = "⚔️ You continue your adventure!"
         state["combat_state"] = None
-        st.experimental_rerun()
+        st.rerun()
 
     if c2.button(
         "🚪 Exit Dungeon (no save)",
@@ -555,7 +555,7 @@ def render_victory_screen(
     ):
         st.warning("Run discarded.")
         state.clear()
-        st.experimental_rerun()
+        st.rerun()
 
     if c3.button(
         "💾 Save Score & Exit", width="stretch", key=_btn_key(state, "vict_save_exit")
@@ -566,7 +566,7 @@ def render_victory_screen(
         st.success("Saved! See you next time.")
         st.balloons()
         state.clear()
-        st.experimental_rerun()
+        st.rerun()
 
 
 # --------------------------- Leaderboard -------------------------------------
