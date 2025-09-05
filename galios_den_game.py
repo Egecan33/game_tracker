@@ -247,8 +247,9 @@ def render_galios_den_game(
 
 
 def render_game_interface(
-    state: Dict[str, Any], pid: str, supabase, _today_key_utc, _set_best_of_day
+    state, pid, supabase, _today_key_utc, _set_best_of_day
 ) -> None:
+    # Header metrics
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("❤️ Health", f"{int(state.get('health', 0))} HP")
     col2.metric("🧪 Potions", int(state.get("num_health_potions", 0)))
@@ -261,35 +262,30 @@ def render_game_interface(
     if msg:
         st.info(msg)
 
-    # If someone (e.g., mercy) requested an immediate save, do it here invisibly.
-    if int(state.get("health", 0)) <= 0 and state.get("force_save"):
-        _galios_den_finalize_and_save(
-            state, pid, supabase, _today_key_utc, _set_best_of_day
-        )
-        state.clear()
-        st.success("Score saved!")
-        st.balloons()
-        st.experimental_rerun()
-        return
-
-    # Death screen → user may save (0 score) or discard
+    # ── Auto-save flows (no manual reruns) ────────────────────────────────────
+    # Mercy path sets force_score_override and health=0; death must save 0.
     if int(state.get("health", 0)) <= 0:
-        st.error("💀 You have been defeated!")
-        st.markdown("**Final Score: 0 (death)**")
-        c1, c2 = st.columns(2)
-        if c1.button("💾 Save 0 & Exit", type="primary", use_container_width=True):
-            state["force_score_override"] = 0  # death always saves 0
+        if not state.get("_saved_once", False):
+            if state.get("force_score_override") is None:
+                state["force_score_override"] = 0  # death = zero score
             _galios_den_finalize_and_save(
                 state, pid, supabase, _today_key_utc, _set_best_of_day
             )
-            state.clear()
-            st.success("Saved (0).")
-            st.experimental_rerun()
-        if c2.button("🗙 Discard Run", use_container_width=True):
-            state.clear()
-            st.warning("Run discarded.")
-            st.experimental_rerun()
+            state["_saved_once"] = True
+        st.success("Score saved. Thanks for playing!")
+        # Reset to landing view for next rerun
+        state.clear()
         return
+
+    # Screen routing
+    combat_state = state.get("combat_state")
+    if combat_state == "victory":
+        render_victory_screen(state, pid, supabase, _today_key_utc, _set_best_of_day)
+    elif combat_state == "fighting":
+        render_combat_screen(state, pid, supabase, _today_key_utc, _set_best_of_day)
+    else:
+        spawn_new_enemy(state)
+        render_combat_screen(state, pid, supabase, _today_key_utc, _set_best_of_day)
 
     combat_state = state.get("combat_state")
     if combat_state == "victory":
@@ -339,7 +335,7 @@ def spawn_new_enemy(state: Dict[str, Any]) -> None:
 
 
 def render_combat_screen(
-    state: Dict[str, Any], pid: str, supabase, _today_key_utc, _set_best_of_day
+    state, pid, supabase, _today_key_utc, _set_best_of_day
 ) -> None:
     enemy = state.get("current_enemy", "Unknown Enemy")
     enemy_health = int(state.get("enemy_health", 0))
@@ -436,7 +432,7 @@ def handle_heal(state: Dict[str, Any]) -> None:
 
 
 def handle_beg_forgiveness(
-    state: Dict[str, Any], pid: str, supabase, _today_key_utc, _set_best_of_day
+    state, pid, supabase, _today_key_utc, _set_best_of_day
 ) -> None:
     """Begging Gatekeeper Galio for mercy."""
     mercy = random.choice([True, False])
@@ -444,14 +440,19 @@ def handle_beg_forgiveness(
 
     if mercy:
         awarded = int(math.ceil(cur / 2.0))
-        state["message"] = f"🙏 Galio shows mercy! Final score: {awarded} (auto-saved)."
         state["force_score_override"] = awarded
-        state["force_save"] = True
-        state["health"] = 0  # triggers auto-save path in render_game_interface
+        state["message"] = f"🙏 Galio shows mercy! Final score: {awarded} (auto-saved)."
+        # immediate save (snappy)
+        if not state.get("_saved_once", False):
+            _galios_den_finalize_and_save(
+                state, pid, supabase, _today_key_utc, _set_best_of_day
+            )
+            state["_saved_once"] = True
+        state.clear()  # end run now
     else:
         state["message"] = "💀 He smashed you in pieces. Galio has no mercy!"
         state["combat_state"] = None
-        state["health"] = 0  # death flow (user may save 0 or discard)
+        state["health"] = 0  # triggers death auto-save (0)
 
 
 def handle_run_away(state: Dict[str, Any]) -> None:
@@ -493,13 +494,13 @@ def render_victory_screen(
         state["combat_state"] = None
         # Spawn and render next enemy immediately (snappy)
         spawn_new_enemy(state)
-        render_combat_screen(state)
+        render_combat_screen(state, pid, supabase, _today_key_utc, _set_best_of_day)
         return
 
     if c2.button("🚪 Exit Dungeon (no save)", use_container_width=True):
         state.clear()
         st.warning("Run discarded.")
-        st.experimental_rerun()
+        st.rerun()
 
     if c3.button("💾 Save Score & Exit", use_container_width=True):
         _galios_den_finalize_and_save(
@@ -507,8 +508,7 @@ def render_victory_screen(
         )
         state.clear()
         st.success("Saved! See you next time.")
-        st.balloons()
-        st.experimental_rerun()
+        return
 
 
 # --------------------------- Leaderboard -------------------------------------
