@@ -1,11 +1,11 @@
 # galios_den_game.py
 # -----------------------------------------------------------------------------
-# Galio's Den - Daily Mini-Game for Streamlit (snappy transitions)
+# Galio's Den - Daily Mini-Game for Streamlit (instant transitions)
 # - Unlimited time per run
 # - No save during combat; save/exit only on victory (death auto-saves 0)
 # - Mercy auto-saves ceil(score/2) and ends run
 # - Uncapped HP
-# - Targeted reruns ONLY on screen transitions for instant refresh
+# - Immediate reruns on ALL state-changing actions (no double-clicks)
 # - Unique button keys (no DuplicateElementId)
 # - UTC-aware timestamps
 # - Leaderboard: highest score, then shortest time
@@ -279,6 +279,15 @@ def render_game_interface(
     state: Dict[str, Any], pid: str, supabase, _today_key_utc, _set_best_of_day
 ) -> None:
     """Render the main game interface during gameplay."""
+    # If we need a new enemy, spawn it and rerun immediately to render fresh UI.
+    if (
+        state.get("combat_state") not in ("fighting", "victory")
+        and int(state.get("health", 0)) > 0
+    ):
+        spawn_new_enemy(state)
+        st.rerun()
+        return
+
     # Stats header (uncapped HP)
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("❤️ Health", f"{int(state.get('health', 0))} HP")
@@ -310,13 +319,9 @@ def render_game_interface(
         return
 
     # Screen routing
-    combat_state = state.get("combat_state")
-    if combat_state == "victory":
+    if state.get("combat_state") == "victory":
         render_victory_screen(state, pid, supabase, _today_key_utc, _set_best_of_day)
-    elif combat_state == "fighting":
-        render_combat_screen(state, pid, supabase, _today_key_utc, _set_best_of_day)
     else:
-        spawn_new_enemy(state)
         render_combat_screen(state, pid, supabase, _today_key_utc, _set_best_of_day)
 
 
@@ -379,12 +384,8 @@ def render_combat_screen(
             "⚔️ Attack", type="primary", width="stretch", key=_btn_key(state, "attack")
         ):
             handle_attack(state)
-            # If the action transitions screens, refresh immediately
-            if (
-                int(state.get("health", 0)) <= 0
-                or state.get("combat_state") == "victory"
-            ):
-                st.rerun()
+            # Always rerun so damage, HP bars, and victory/death screen show instantly
+            st.rerun()
 
     with col2:
         potions = int(state.get("num_health_potions", 0))
@@ -396,7 +397,8 @@ def render_combat_screen(
             key=_btn_key(state, "heal"),
         ):
             handle_heal(state)
-            # Staying in same screen is fine; no forced rerun
+            # Rerun to reflect new HP immediately
+            st.rerun()
 
     with col3:
         if enemy == "Gatekeeper Galio":
@@ -406,7 +408,6 @@ def render_combat_screen(
                 handle_beg_forgiveness(
                     state, pid, supabase, _today_key_utc, _set_best_of_day
                 )
-                # Mercy ends run immediately; death also ends
                 st.rerun()
         else:
             if st.button("🏃 Run Away", width="stretch", key=_btn_key(state, "run")):
