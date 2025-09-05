@@ -24,7 +24,7 @@ import streamlit as st
 # --------------------------- Game Constants ----------------------------------
 
 PLAYER_MAX_HP = 100
-BASE_ATTACK_MAX = 43  # player attack is 1..(BASE_ATTACK_MAX + score//3)
+BASE_ATTACK_MAX = 40  # player attack is 1..(BASE_ATTACK_MAX + score//3)
 RESET_UTC_LABEL = "03:00"
 
 # Cleaned list
@@ -97,7 +97,7 @@ GALIOS_DEN_ENEMIES = [
 def _galios_den_is_servant(enemy: str, galio_health: int) -> int:
     """If a Servant appears, Galio gets tougher later on."""
     if enemy == "Servant of Galio":
-        return galio_health + 75
+        return galio_health + 70
     return galio_health
 
 
@@ -250,7 +250,7 @@ def render_galios_den_game(
                     "score": 0,
                     "health": PLAYER_MAX_HP,
                     "num_health_potions": 3,
-                    "galio_health": 185,  # initial Galio HP baseline
+                    "galio_health": 175,  # initial Galio HP baseline
                     "combat_state": None,  # "fighting" | "victory" | None
                     "current_enemy": None,
                     "enemy_health": 0,
@@ -347,8 +347,9 @@ def spawn_new_enemy(state: Dict[str, Any]) -> None:
             "👊 **One Punch Man** appears! 'I will become stronger. Have you seen Genos? Btw.. today is discount day.'"
         )
     else:
-        max_enemy_health = 82 + (2 * score)
-        enemy_health = random.randint(1, max(1, max_enemy_health))
+        max_enemy_health = 55 + (3 * score)
+        min_enemy_health = 1 + (3 * score)
+        enemy_health = random.randint(min_enemy_health, max(1, max_enemy_health))
         state["message"] = f"👹 **{enemy}** has appeared!"
 
     state.update(
@@ -472,7 +473,7 @@ def handle_heal(state: Dict[str, Any]) -> None:
         return
 
     score = int(state.get("score", 0))
-    heal_amount = 40 + (19 * (score // 3))
+    heal_amount = 30 + (8 * (score // 2))
     state["health"] = int(state.get("health", 0)) + heal_amount  # no cap
     state["num_health_potions"] = potions - 1
     state["message"] = (
@@ -522,7 +523,7 @@ def render_victory_screen(
     score = int(state.get("score", 0))
 
     # Potion drop chance decreases as you get stronger
-    drop_chance = max(5, 47 - (2 * (score // 3)))
+    drop_chance = max(5, 45 - (3 * (score // 2)))
     if random.randint(1, 100) <= drop_chance:
         state["num_health_potions"] = int(state.get("num_health_potions", 0)) + 1
         state[
