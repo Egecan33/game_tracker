@@ -16,6 +16,7 @@ import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 import plotly.graph_objects as go  # for H2H heatmap
+from galios_den_game import render_galios_den_game
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Environment & Supabase
@@ -1489,231 +1490,250 @@ def _range_to_df_tz(series: pd.Series, start_d, end_d):
     return s, e
 
 
+# # ─────────────────────────────────────────────────────────────────────────────
+# # Daily mini-game: Odd Emoji Out (OEO)
+# # ─────────────────────────────────────────────────────────────────────────────
+
+# OEO_PAIRS = [
+#     ("🍎", "🍏"),
+#     ("😃", "😄"),
+#     ("😺", "😸"),
+#     ("🐶", "🐺"),
+#     ("🐻", "🐻‍❄️"),
+#     ("⭐", "✨"),
+#     ("🟦", "🟩"),
+#     ("🍋", "🍊"),
+#     ("🌕", "🌖"),
+#     ("💙", "💜"),
+# ]
+
+
+# def _oeo_new_round_state(state: Dict[str, Any]):
+#     # escalate difficulty with score
+#     score = int(state.get("score", 0))
+#     n = min(OEO_MAX_GRID, OEO_START_GRID + score // 2)
+#     pair_idx = np.random.randint(0, len(OEO_PAIRS))
+#     base, odd = OEO_PAIRS[pair_idx]
+#     target_r = np.random.randint(0, n)
+#     target_c = np.random.randint(0, n)
+#     state.update(
+#         {
+#             "grid_n": n,
+#             "pair": (
+#                 (base, odd) if np.random.rand() < 0.5 else (odd, base)
+#             ),  # flip sometimes
+#             "target": (int(target_r), int(target_c)),
+#             "round_id": _uuid(),
+#         }
+#     )
+#     return state
+
+
+# def _oeo_finalize_and_save(state: Dict[str, Any], player_id: str):
+#     if not supabase:
+#         return
+#     try:
+#         date_key = _today_key_utc()
+#         started_at = state.get("started_at")
+#         finished_at = _utc_now()
+#         score = int(state.get("score", 0))
+#         rounds = int(state.get("rounds_played", 0))
+#         supabase.table("minigame_scores").insert(
+#             {
+#                 "date_key": date_key,
+#                 "player_id": player_id,
+#                 "score": score,
+#                 "rounds_played": rounds,
+#                 "duration_s": OEO_DURATION_S,
+#                 "started_at": started_at.isoformat() if started_at else None,
+#                 "finished_at": finished_at.isoformat(),
+#                 "is_best_for_day": False,
+#                 "meta": {"minigame": MINIGAME_NAME},
+#             }
+#         ).execute()
+#         _set_best_of_day(date_key, player_id)
+#     except Exception as e:
+#         st.error(f"Failed to save score: {e}")
+
+
+# def render_daily_game():
+#     st.header("🎮 Daily Mini-Game — Odd Emoji Out")
+#     _run_daily_awards_if_needed()  # award yesterday (idempotent)
+
+#     players_df = sb_select("players")
+
+#     # Login gate
+#     pid = _login_gate(players_df, key_prefix="oeo")
+#     if not pid:
+#         st.info("Login to play.")
+#         return
+
+#     # Show personal best today
+#     today_key = _today_key_utc()
+#     best_today = 0
+#     try:
+#         if supabase:
+#             r = (
+#                 supabase.table("minigame_scores")
+#                 .select("score")
+#                 .eq("date_key", today_key)
+#                 .eq("player_id", pid)
+#                 .eq("is_best_for_day", True)
+#                 .order("score", desc=True)
+#                 .limit(1)
+#                 .execute()
+#             )
+#             rows = r.data or []
+#             if rows:
+#                 best_today = int(rows[0]["score"])
+#     except Exception:
+#         pass
+
+#     # Header (styled name, metrics)
+#     with st.container():
+#         colA, colB, colC = st.columns([2, 1, 1])
+
+#         eq = _equipped_for_player(pid)
+#         scope = f"pfont-{pid}"
+#         _inject_font_css(eq.get("font"), scope)
+
+#         # Safer name lookup (no KeyError if missing)
+#         pname = "Player"
+#         try:
+#             if not players_df.empty and {"id", "name"} <= set(players_df.columns):
+#                 pname = str(players_df.set_index("id")["name"].get(pid) or "Player")
+#         except Exception:
+#             pass
+
+#         colA.markdown(
+#             f"<h3 class='{scope}' style='margin:0;'>Hi, {pname}!</h3>",
+#             unsafe_allow_html=True,
+#         )
+#         colB.metric("Best today", best_today)
+#         colC.metric("Resets (UTC)", f"{DAY_ROLLOVER_HOUR_UTC:02d}:00")
+
+#     # ---- Run state ----
+#     state = st.session_state.setdefault("oeo_state", {})
+#     running = bool(state.get("running", False))
+#     cooldown_until = state.get("cooldown_until")
+
+#     # Start button (with a 70s cooldown from last start)
+#     now = _utc_now()
+#     locked = bool(cooldown_until and now < cooldown_until)
+
+#     if not running:
+#         st.markdown("Find the **one** odd emoji in the grid. You have **60 seconds**.")
+#         st.caption("Tip: difficulty ramps up as you score more.")
+#         if locked:
+#             remain = max(0, int((cooldown_until - now).total_seconds()))
+#             st.warning(f"Please wait {remain}s before starting another run.")
+#         if st.button("▶️ Start 60-second run", disabled=locked):
+#             state.clear()
+#             state.update(
+#                 {
+#                     "running": True,
+#                     "score": 0,
+#                     "rounds_played": 0,
+#                     "started_at": _utc_now(),
+#                     "cooldown_until": _utc_now() + timedelta(seconds=70),
+#                 }
+#             )
+#             _oeo_new_round_state(state)
+#             st.rerun()
+#         st.divider()
+#     else:
+#         # Running UI
+#         started_at = state.get("started_at", _utc_now())
+#         time_left = OEO_DURATION_S - int((_utc_now() - started_at).total_seconds())
+#         if time_left <= 0:
+#             # time up
+#             state["running"] = False
+#             _oeo_finalize_and_save(state, pid)
+#             st.success(f"Time! Final score: {state.get('score', 0)}")
+#             st.balloons()
+#         else:
+#             # Header bar with countdown + score
+#             b1, b2 = st.columns([1, 1])
+#             b1.subheader(f"⏳ {time_left}s left")
+#             b2.subheader(f"🏅 Score: {state.get('score', 0)}")
+
+#             n = int(state.get("grid_n", OEO_START_GRID))
+#             base, odd = state.get("pair", ("🍎", "🍏"))
+#             tr, tc = state.get("target", (0, 0))
+#             rid = state.get("round_id") or _uuid()  # fallback for old state
+
+#             # Draw grid of buttons
+#             clicked = None
+#             for r in range(n):
+#                 cols = st.columns(n)
+#                 for c in range(n):
+#                     is_target = r == tr and c == tc
+#                     em = odd if is_target else base
+#                     if cols[c].button(em, key=f"oeo_btn_{rid}_{r}_{c}"):
+#                         clicked = (r, c)
+
+#             # Handle click
+#             if clicked is not None:
+#                 state["rounds_played"] = int(state.get("rounds_played", 0)) + 1
+#                 if clicked == (tr, tc):
+#                     state["score"] = int(state.get("score", 0)) + 1
+#                 _oeo_new_round_state(state)
+#                 st.rerun()
+
+#     # Daily leaderboard (best of day)
+#     st.subheader("🏆 Today’s Leaderboard")
+#     try:
+#         if supabase:
+#             best_rows = (
+#                 supabase.table("minigame_scores")
+#                 .select("player_id, score")
+#                 .eq("date_key", today_key)
+#                 .eq("is_best_for_day", True)
+#                 .order("score", desc=True)
+#                 .limit(100)
+#                 .execute()
+#                 .data
+#                 or []
+#             )
+#             if best_rows:
+#                 df = pd.DataFrame(best_rows)
+#                 names = sb_select("players")[["id", "name"]]
+#                 if not names.empty:
+#                     df = df.merge(
+#                         names.rename(columns={"id": "player_id"}),
+#                         on="player_id",
+#                         how="left",
+#                     )
+#                 df = df.rename(columns={"name": "Player", "score": "Score"})
+#                 df.insert(0, "#", np.arange(1, len(df) + 1))
+#                 st.dataframe(
+#                     df[["#", "Player", "Score"]],
+#                     use_container_width=True,
+#                     hide_index=True,
+#                 )
+#             else:
+#                 st.info("No scores yet today.")
+#     except Exception as e:
+#         st.error(f"Leaderboard failed: {e}")
+
 # ─────────────────────────────────────────────────────────────────────────────
-# Daily mini-game: Odd Emoji Out (OEO)
+# Daily mini-game: Galio's Den (external module)
 # ─────────────────────────────────────────────────────────────────────────────
-
-OEO_PAIRS = [
-    ("🍎", "🍏"),
-    ("😃", "😄"),
-    ("😺", "😸"),
-    ("🐶", "🐺"),
-    ("🐻", "🐻‍❄️"),
-    ("⭐", "✨"),
-    ("🟦", "🟩"),
-    ("🍋", "🍊"),
-    ("🌕", "🌖"),
-    ("💙", "💜"),
-]
-
-
-def _oeo_new_round_state(state: Dict[str, Any]):
-    # escalate difficulty with score
-    score = int(state.get("score", 0))
-    n = min(OEO_MAX_GRID, OEO_START_GRID + score // 2)
-    pair_idx = np.random.randint(0, len(OEO_PAIRS))
-    base, odd = OEO_PAIRS[pair_idx]
-    target_r = np.random.randint(0, n)
-    target_c = np.random.randint(0, n)
-    state.update(
-        {
-            "grid_n": n,
-            "pair": (
-                (base, odd) if np.random.rand() < 0.5 else (odd, base)
-            ),  # flip sometimes
-            "target": (int(target_r), int(target_c)),
-            "round_id": _uuid(),
-        }
-    )
-    return state
-
-
-def _oeo_finalize_and_save(state: Dict[str, Any], player_id: str):
-    if not supabase:
-        return
-    try:
-        date_key = _today_key_utc()
-        started_at = state.get("started_at")
-        finished_at = _utc_now()
-        score = int(state.get("score", 0))
-        rounds = int(state.get("rounds_played", 0))
-        supabase.table("minigame_scores").insert(
-            {
-                "date_key": date_key,
-                "player_id": player_id,
-                "score": score,
-                "rounds_played": rounds,
-                "duration_s": OEO_DURATION_S,
-                "started_at": started_at.isoformat() if started_at else None,
-                "finished_at": finished_at.isoformat(),
-                "is_best_for_day": False,
-                "meta": {"minigame": MINIGAME_NAME},
-            }
-        ).execute()
-        _set_best_of_day(date_key, player_id)
-    except Exception as e:
-        st.error(f"Failed to save score: {e}")
 
 
 def render_daily_game():
-    st.header("🎮 Daily Mini-Game — Odd Emoji Out")
-    _run_daily_awards_if_needed()  # award yesterday (idempotent)
-
+    """Delegate the Daily Game tab to Galio's Den."""
     players_df = sb_select("players")
-
-    # Login gate
-    pid = _login_gate(players_df, key_prefix="oeo")
-    if not pid:
-        st.info("Login to play.")
-        return
-
-    # Show personal best today
-    today_key = _today_key_utc()
-    best_today = 0
-    try:
-        if supabase:
-            r = (
-                supabase.table("minigame_scores")
-                .select("score")
-                .eq("date_key", today_key)
-                .eq("player_id", pid)
-                .eq("is_best_for_day", True)
-                .order("score", desc=True)
-                .limit(1)
-                .execute()
-            )
-            rows = r.data or []
-            if rows:
-                best_today = int(rows[0]["score"])
-    except Exception:
-        pass
-
-    # Header (styled name, metrics)
-    with st.container():
-        colA, colB, colC = st.columns([2, 1, 1])
-
-        eq = _equipped_for_player(pid)
-        scope = f"pfont-{pid}"
-        _inject_font_css(eq.get("font"), scope)
-
-        # Safer name lookup (no KeyError if missing)
-        pname = "Player"
-        try:
-            if not players_df.empty and {"id", "name"} <= set(players_df.columns):
-                pname = str(players_df.set_index("id")["name"].get(pid) or "Player")
-        except Exception:
-            pass
-
-        colA.markdown(
-            f"<h3 class='{scope}' style='margin:0;'>Hi, {pname}!</h3>",
-            unsafe_allow_html=True,
-        )
-        colB.metric("Best today", best_today)
-        colC.metric("Resets (UTC)", f"{DAY_ROLLOVER_HOUR_UTC:02d}:00")
-
-    # ---- Run state ----
-    state = st.session_state.setdefault("oeo_state", {})
-    running = bool(state.get("running", False))
-    cooldown_until = state.get("cooldown_until")
-
-    # Start button (with a 70s cooldown from last start)
-    now = _utc_now()
-    locked = bool(cooldown_until and now < cooldown_until)
-
-    if not running:
-        st.markdown("Find the **one** odd emoji in the grid. You have **60 seconds**.")
-        st.caption("Tip: difficulty ramps up as you score more.")
-        if locked:
-            remain = max(0, int((cooldown_until - now).total_seconds()))
-            st.warning(f"Please wait {remain}s before starting another run.")
-        if st.button("▶️ Start 60-second run", disabled=locked):
-            state.clear()
-            state.update(
-                {
-                    "running": True,
-                    "score": 0,
-                    "rounds_played": 0,
-                    "started_at": _utc_now(),
-                    "cooldown_until": _utc_now() + timedelta(seconds=70),
-                }
-            )
-            _oeo_new_round_state(state)
-            st.rerun()
-        st.divider()
-    else:
-        # Running UI
-        started_at = state.get("started_at", _utc_now())
-        time_left = OEO_DURATION_S - int((_utc_now() - started_at).total_seconds())
-        if time_left <= 0:
-            # time up
-            state["running"] = False
-            _oeo_finalize_and_save(state, pid)
-            st.success(f"Time! Final score: {state.get('score', 0)}")
-            st.balloons()
-        else:
-            # Header bar with countdown + score
-            b1, b2 = st.columns([1, 1])
-            b1.subheader(f"⏳ {time_left}s left")
-            b2.subheader(f"🏅 Score: {state.get('score', 0)}")
-
-            n = int(state.get("grid_n", OEO_START_GRID))
-            base, odd = state.get("pair", ("🍎", "🍏"))
-            tr, tc = state.get("target", (0, 0))
-            rid = state.get("round_id") or _uuid()  # fallback for old state
-
-            # Draw grid of buttons
-            clicked = None
-            for r in range(n):
-                cols = st.columns(n)
-                for c in range(n):
-                    is_target = r == tr and c == tc
-                    em = odd if is_target else base
-                    if cols[c].button(em, key=f"oeo_btn_{rid}_{r}_{c}"):
-                        clicked = (r, c)
-
-            # Handle click
-            if clicked is not None:
-                state["rounds_played"] = int(state.get("rounds_played", 0)) + 1
-                if clicked == (tr, tc):
-                    state["score"] = int(state.get("score", 0)) + 1
-                _oeo_new_round_state(state)
-                st.rerun()
-
-    # Daily leaderboard (best of day)
-    st.subheader("🏆 Today’s Leaderboard")
-    try:
-        if supabase:
-            best_rows = (
-                supabase.table("minigame_scores")
-                .select("player_id, score")
-                .eq("date_key", today_key)
-                .eq("is_best_for_day", True)
-                .order("score", desc=True)
-                .limit(100)
-                .execute()
-                .data
-                or []
-            )
-            if best_rows:
-                df = pd.DataFrame(best_rows)
-                names = sb_select("players")[["id", "name"]]
-                if not names.empty:
-                    df = df.merge(
-                        names.rename(columns={"id": "player_id"}),
-                        on="player_id",
-                        how="left",
-                    )
-                df = df.rename(columns={"name": "Player", "score": "Score"})
-                df.insert(0, "#", np.arange(1, len(df) + 1))
-                st.dataframe(
-                    df[["#", "Player", "Score"]],
-                    use_container_width=True,
-                    hide_index=True,
-                )
-            else:
-                st.info("No scores yet today.")
-    except Exception as e:
-        st.error(f"Leaderboard failed: {e}")
+    return render_galios_den_game(
+        players_df=players_df,
+        _login_gate=_login_gate,
+        supabase=supabase,
+        _today_key_utc=_today_key_utc,
+        _set_best_of_day=_set_best_of_day,
+        _run_daily_awards_if_needed=_run_daily_awards_if_needed,
+        _equipped_for_player=_equipped_for_player,
+        _inject_font_css=_inject_font_css,
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
