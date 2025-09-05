@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import math
 import random
-from datetime import datetime, UTC
+from datetime import datetime, timedelta, date, UTC
 from typing import Any, Dict
 
 import pandas as pd
@@ -26,6 +26,34 @@ import streamlit as st
 PLAYER_MAX_HP = 100
 BASE_ATTACK_MAX = 40  # player attack is 1..(BASE_ATTACK_MAX + score//3)
 RESET_UTC_LABEL = "03:00"
+
+# --- Weekly window (fixed 7-day buckets) -------------------------------------
+
+WEEK_ANCHOR_DATE_UTC = date(2024, 1, 1)  # change if you want a different fixed anchor
+
+
+def _current_week_bounds_keys_utc(rollover_hour: int = 3):
+    """
+    Returns (week_start_key, week_end_key, week_start_date, week_end_date) for a fixed
+    7-day bucket aligned to WEEK_ANCHOR_DATE_UTC. Day boundary honors the same 03:00 UTC rollover.
+    """
+    now = datetime.now(UTC)
+    # respect daily rollover hour for which "day" we're in
+    current_day = (
+        (now.date() - timedelta(days=1)) if now.hour < rollover_hour else now.date()
+    )
+    # which 7-day bucket since anchor?
+    delta_days = (current_day - WEEK_ANCHOR_DATE_UTC).days
+    bucket_idx = max(0, delta_days // 7)
+    week_start = WEEK_ANCHOR_DATE_UTC + timedelta(days=bucket_idx * 7)
+    week_end = week_start + timedelta(days=6)
+    return (
+        week_start.strftime("%Y-%m-%d"),
+        week_end.strftime("%Y-%m-%d"),
+        week_start,
+        week_end,
+    )
+
 
 # Cleaned list
 GALIOS_DEN_ENEMIES = [
@@ -181,7 +209,7 @@ def render_galios_den_game(
         st.info("Login to enter Galio's Den.")
         return
 
-    # Best-of-day (today)
+    # Best-of-day (today) for player metric
     today_key = _today_key_utc()
     best_today = 0
     try:
@@ -202,6 +230,9 @@ def render_galios_den_game(
                 best_today = int(rows[0]["score"])
     except Exception:
         pass
+
+    # Weekly window (for leaderboard reset every 7 days)
+    week_start_key, week_end_key, _, _ = _current_week_bounds_keys_utc(3)
 
     # Styled header
     with st.container():
@@ -268,8 +299,8 @@ def render_galios_den_game(
     else:
         render_game_interface(state, pid, supabase, _today_key_utc, _set_best_of_day)
 
-    # Daily leaderboard
-    render_daily_leaderboard(today_key, supabase, players_df)
+    # Weekly leaderboard (resets every 7 days); daily rewards still handled separately
+    render_weekly_leaderboard(week_start_key, week_end_key, supabase, players_df)
 
 
 # --------------------------- Gameplay Screens --------------------------------
@@ -574,6 +605,76 @@ def render_victory_screen(
 # --------------------------- Leaderboard -------------------------------------
 
 
+def render_weekly_leaderboard(
+    week_start_key: str, week_end_key: str, supabase, players_df
+) -> None:
+    """Render the weekly leaderboard (best weekly score per player, ties by shortest time)."""
+    st.subheader("🏆 This Week's Leaderboard")
+    st.caption(f"Week window: {week_start_key} → {week_end_key} (resets every 7 days)")
+    try:
+        if supabase:
+            rows = (
+                supabase.table("minigame_scores")
+                .select("player_id, score, duration_s, finished_at, date_key")
+                .gte("date_key", week_start_key)
+                .lte("date_key", week_end_key)
+                .eq("is_best_for_day", True)  # consider each day's personal bests
+                .execute()
+                .data
+                or []
+            )
+            if rows:
+                df = pd.DataFrame(rows)
+
+                # one row per player: best weekly score, tie-break shortest time, then earliest finish
+                df["_sort_time"] = pd.to_numeric(df["duration_s"]).fillna(10**12)
+                df["_sort_finish"] = pd.to_datetime(
+                    df.get("finished_at", None), errors="coerce"
+                )
+                df = df.sort_values(
+                    ["score", "_sort_time", "_sort_finish"],
+                    ascending=[False, True, True],
+                )
+                df = df.drop_duplicates(subset=["player_id"], keep="first")
+
+                # names
+                names = (
+                    players_df[["id", "name"]]
+                    if (isinstance(players_df, pd.DataFrame) and not players_df.empty)
+                    else pd.DataFrame()
+                )
+                if not names.empty:
+                    df = df.merge(
+                        names.rename(columns={"id": "player_id"}),
+                        on="player_id",
+                        how="left",
+                    )
+
+                # final display sort
+                df = df.sort_values(["score", "_sort_time"], ascending=[False, True])
+
+                df = df.rename(
+                    columns={
+                        "name": "Player",
+                        "score": "Best Score",
+                        "duration_s": "Best Time (s)",
+                    }
+                )
+                df.insert(0, "#", range(1, len(df) + 1))
+                st.dataframe(
+                    df[["#", "Player", "Best Score", "Best Time (s)"]],
+                    width="stretch",
+                    hide_index=True,
+                )
+            else:
+                st.info(
+                    "No scores recorded this week yet. Be the first to enter Galio's Den!"
+                )
+    except Exception as e:
+        st.error(f"Leaderboard failed: {e}")
+
+
+# (Kept for reference; no longer used)
 def render_daily_leaderboard(today_key: str, supabase, players_df) -> None:
     """Render the daily leaderboard for Galio's Den."""
     st.subheader("🏆 Today's Leaderboard")
