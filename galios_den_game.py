@@ -14,6 +14,7 @@ from typing import Dict, Any
 
 import pandas as pd
 import streamlit as st
+import math
 
 # --------------------------- Game Constants ----------------------------------
 
@@ -105,22 +106,33 @@ def _percent(cur: int, maxv: int) -> int:
 def _galios_den_finalize_and_save(
     state: Dict[str, Any], player_id: str, supabase, _today_key_utc, _set_best_of_day
 ) -> None:
-    """Save the final game score to the database."""
+    """Save the final game score to the database (duration captured; optional override)."""
     if not supabase:
         return
     try:
         date_key = _today_key_utc()
         started_at = state.get("started_at")
         finished_at = datetime.utcnow()
+
+        # Score override (e.g., death=0, mercy=ceil(score/2))
         score = int(state.get("score", 0))
+        if state.get("force_score_override") is not None:
+            score = int(state["force_score_override"])
+
+        # Duration in seconds
+        duration_s = None
+        if started_at:
+            try:
+                duration_s = int((finished_at - started_at).total_seconds())
+            except Exception:
+                duration_s = None
 
         payload = {
             "date_key": date_key,
             "player_id": player_id,
             "score": score,
-            "rounds_played": score,  # score = enemies defeated
-            # Unlimited-time game: allow NULL duration (omit if your column is NOT NULL)
-            "duration_s": None,
+            "rounds_played": score,  # same convention as OEO
+            "duration_s": duration_s,  # time-to-completion
             "started_at": started_at.isoformat() if started_at else None,
             "finished_at": finished_at.isoformat(),
             "is_best_for_day": False,
@@ -146,17 +158,14 @@ def render_galios_den_game(
     _equipped_for_player,
     _inject_font_css,
 ) -> None:
-    """Render the complete Galio's Den game interface."""
     st.header("🏰 Daily Mini-Game — Galio's Den")
     _run_daily_awards_if_needed()
 
-    # Login
     pid = _login_gate(players_df, key_prefix="galios_den")
     if not pid:
         st.info("Login to enter Galio's Den.")
         return
 
-    # Best-of-day (today)
     today_key = _today_key_utc()
     best_today = 0
     try:
@@ -177,10 +186,8 @@ def render_galios_den_game(
     except Exception:
         pass
 
-    # Styled header
     with st.container():
         colA, colB, colC = st.columns([2, 1, 1])
-
         eq = _equipped_for_player(pid)
         scope = f"pfont-{pid}"
         _inject_font_css(eq.get("font"), scope)
@@ -199,7 +206,6 @@ def render_galios_den_game(
         colB.metric("Best today", best_today)
         colC.metric("Resets (UTC)", "03:00")
 
-    # Game state
     state = st.session_state.setdefault("galios_den_state", {})
     running = bool(state.get("running", False))
 
@@ -212,7 +218,6 @@ def render_galios_den_game(
             "- Health potions can drop after victories  \n"
             "- **No timer — take as long as you like**"
         )
-
         if st.button("⚔️ Enter Galio's Den", type="primary"):
             state.clear()
             state.update(
@@ -222,22 +227,19 @@ def render_galios_den_game(
                     "score": 0,
                     "health": PLAYER_MAX_HP,
                     "num_health_potions": 3,
-                    "galio_health": 185,  # initial Galio HP baseline
-                    "combat_state": None,  # "fighting" | "victory" | None
+                    "galio_health": 185,
+                    "combat_state": None,
                     "current_enemy": None,
                     "enemy_health": 0,
                     "enemy_max_health": 0,
                     "message": "You enter the dark dungeon...",
+                    # no save/exit controls while fighting
                 }
             )
-            st.rerun()
-
         st.divider()
     else:
-        # Running game loop
         render_game_interface(state, pid, supabase, _today_key_utc, _set_best_of_day)
 
-    # Daily leaderboard
     render_daily_leaderboard(today_key, supabase, players_df)
 
 
@@ -247,59 +249,56 @@ def render_galios_den_game(
 def render_game_interface(
     state: Dict[str, Any], pid: str, supabase, _today_key_utc, _set_best_of_day
 ) -> None:
-    """Render the main game interface during gameplay."""
-    # Stats header
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("❤️ Health", f"{state.get('health', 0)}/{PLAYER_MAX_HP}")
-    col2.metric("🧪 Potions", state.get("num_health_potions", 0))
-    col3.metric("🏆 Score", state.get("score", 0))
-    col4.metric("⚔️ Attack Power", f"1-{BASE_ATTACK_MAX + (state.get('score', 0) // 3)}")
+    col1.metric("❤️ Health", f"{int(state.get('health', 0))} HP")
+    col2.metric("🧪 Potions", int(state.get("num_health_potions", 0)))
+    col3.metric("🏆 Score", int(state.get("score", 0)))
+    col4.metric(
+        "⚔️ Attack Power", f"1-{BASE_ATTACK_MAX + (int(state.get('score', 0)) // 3)}"
+    )
 
-    # Any message from last action
     msg = state.get("message", "")
     if msg:
         st.info(msg)
 
-    # Early exit/save option while alive
-    with st.expander("Save & exit options", expanded=False):
-        c1, c2 = st.columns(2)
-        if c1.button("💾 Save Score & Exit Now", use_container_width=True):
-            _galios_den_finalize_and_save(
-                state, pid, supabase, _today_key_utc, _set_best_of_day
-            )
-            final_score = int(state.get("score", 0))
-            state.clear()
-            st.success(f"Saved! Final score: {final_score}")
-            st.balloons()
-            st.rerun()
-        if c2.button("🗙 Quit without saving", use_container_width=True):
-            state.clear()
-            st.warning("Run discarded.")
-            st.rerun()
-
-    # Dead → finalization prompt
-    if state.get("health", 0) <= 0:
-        st.error("💀 You have been defeated!")
-        st.markdown(f"**Final Score: {state.get('score', 0)} enemies defeated**")
-        if st.button("💾 Save Score & Exit", type="primary"):
-            _galios_den_finalize_and_save(
-                state, pid, supabase, _today_key_utc, _set_best_of_day
-            )
-            state.clear()
-            st.success("Score saved! Thanks for playing!")
-            st.balloons()
-            st.rerun()
+    # If someone (e.g., mercy) requested an immediate save, do it here invisibly.
+    if int(state.get("health", 0)) <= 0 and state.get("force_save"):
+        _galios_den_finalize_and_save(
+            state, pid, supabase, _today_key_utc, _set_best_of_day
+        )
+        state.clear()
+        st.success("Score saved!")
+        st.balloons()
+        st.experimental_rerun()
         return
 
-    # Combat state
+    # Death screen → user may save (0 score) or discard
+    if int(state.get("health", 0)) <= 0:
+        st.error("💀 You have been defeated!")
+        st.markdown("**Final Score: 0 (death)**")
+        c1, c2 = st.columns(2)
+        if c1.button("💾 Save 0 & Exit", type="primary", use_container_width=True):
+            state["force_score_override"] = 0  # death always saves 0
+            _galios_den_finalize_and_save(
+                state, pid, supabase, _today_key_utc, _set_best_of_day
+            )
+            state.clear()
+            st.success("Saved (0).")
+            st.experimental_rerun()
+        if c2.button("🗙 Discard Run", use_container_width=True):
+            state.clear()
+            st.warning("Run discarded.")
+            st.experimental_rerun()
+        return
+
     combat_state = state.get("combat_state")
     if combat_state == "victory":
-        render_victory_screen(state)
+        render_victory_screen(state, pid, supabase, _today_key_utc, _set_best_of_day)
     elif combat_state == "fighting":
-        render_combat_screen(state)
+        render_combat_screen(state, pid, supabase, _today_key_utc, _set_best_of_day)
     else:
         spawn_new_enemy(state)
-        st.rerun()
+        render_combat_screen(state, pid, supabase, _today_key_utc, _set_best_of_day)
 
 
 def spawn_new_enemy(state: Dict[str, Any]) -> None:
@@ -339,13 +338,13 @@ def spawn_new_enemy(state: Dict[str, Any]) -> None:
     )
 
 
-def render_combat_screen(state: Dict[str, Any]) -> None:
-    """Render the combat interface."""
+def render_combat_screen(
+    state: Dict[str, Any], pid: str, supabase, _today_key_utc, _set_best_of_day
+) -> None:
     enemy = state.get("current_enemy", "Unknown Enemy")
     enemy_health = int(state.get("enemy_health", 0))
     enemy_max_health = int(state.get("enemy_max_health", 1))
 
-    # Enemy health bar (Streamlit wants 0–100)
     st.progress(
         _percent(enemy_health, enemy_max_health),
         text=f"🐉 {enemy}: {enemy_health}/{enemy_max_health} HP",
@@ -357,36 +356,31 @@ def render_combat_screen(state: Dict[str, Any]) -> None:
     with col1:
         if st.button("⚔️ Attack", type="primary", use_container_width=True):
             handle_attack(state)
-            st.rerun()
 
     with col2:
         potions = int(state.get("num_health_potions", 0))
         btn_label = f"🧪 Drink Potion ({potions})" if potions > 0 else "🧪 No Potions"
         if st.button(btn_label, disabled=(potions <= 0), use_container_width=True):
             handle_heal(state)
-            st.rerun()
 
     with col3:
         if enemy == "Gatekeeper Galio":
             if st.button("🙏 Beg Forgiveness", use_container_width=True):
-                handle_beg_forgiveness(state)
-                st.rerun()
+                handle_beg_forgiveness(
+                    state, pid, supabase, _today_key_utc, _set_best_of_day
+                )
         else:
             if st.button("🏃 Run Away", use_container_width=True):
                 handle_run_away(state)
-                st.rerun()
 
 
 def handle_attack(state: Dict[str, Any]) -> None:
-    """Handle player attack + enemy retaliation."""
     score = int(state.get("score", 0))
     enemy = state.get("current_enemy", "")
 
-    # Player damage
     max_attack_damage = BASE_ATTACK_MAX + (score // 3)
     damage_dealt = random.randint(1, max(1, max_attack_damage))
 
-    # Enemy damage
     if enemy == "Gatekeeper Galio":
         max_galio_attack = 23 + (2 * score)
         damage_taken = random.randint(1, max(1, max_galio_attack))
@@ -396,18 +390,16 @@ def handle_attack(state: Dict[str, Any]) -> None:
         max_enemy_attack = 26 + score
         damage_taken = random.randint(1, max(1, max_enemy_attack))
 
-    # Apply results
     state["enemy_health"] = max(0, int(state.get("enemy_health", 0)) - damage_dealt)
     state["health"] = max(0, int(state.get("health", 0)) - damage_taken)
 
-    # Message
     state["message"] = (
-        f"⚔️ You strike {enemy} for {damage_dealt} damage. You receive {damage_taken} damage in retaliation."
+        f"⚔️ You strike {enemy} for {damage_dealt} damage. "
+        f"You receive {damage_taken} damage in retaliation."
     )
 
-    # Outcome checks
     if int(state.get("health", 0)) <= 0:
-        state["combat_state"] = None  # game end path
+        state["combat_state"] = None
         if enemy == "Gatekeeper Galio":
             state[
                 "message"
@@ -420,14 +412,14 @@ def handle_attack(state: Dict[str, Any]) -> None:
             state["message"] += "\n💀 You have been destroyed — your journey ends here."
     elif int(state.get("enemy_health", 0)) <= 0:
         state["combat_state"] = "victory"
-        state["score"] = int(state.get("score", 0)) + 1
+        state["score"] = score + 1
         state["message"] = (
             f"🎉 {enemy} was defeated! You have {int(state.get('health', 0))} HP left."
         )
 
 
 def handle_heal(state: Dict[str, Any]) -> None:
-    """Drink a potion to heal."""
+    """Drink a potion to heal (no cap)."""
     potions = int(state.get("num_health_potions", 0))
     if potions <= 0:
         state["message"] = "❌ You are out of health potions!"
@@ -435,31 +427,31 @@ def handle_heal(state: Dict[str, Any]) -> None:
 
     score = int(state.get("score", 0))
     heal_amount = 40 + (19 * (score // 3))
-    state["health"] = min(PLAYER_MAX_HP, int(state.get("health", 0)) + heal_amount)
+    state["health"] = int(state.get("health", 0)) + heal_amount  # no cap
     state["num_health_potions"] = potions - 1
     state["message"] = (
         f"🧪 You drink a health potion, healing {heal_amount}. "
-        f"HP: {state.get('health', 0)}/{PLAYER_MAX_HP} • Potions left: {state.get('num_health_potions', 0)}."
+        f"HP: {state.get('health', 0)} • Potions left: {state.get('num_health_potions', 0)}."
     )
 
 
-def handle_beg_forgiveness(state: Dict[str, Any]) -> None:
+def handle_beg_forgiveness(
+    state: Dict[str, Any], pid: str, supabase, _today_key_utc, _set_best_of_day
+) -> None:
     """Begging Gatekeeper Galio for mercy."""
     mercy = random.choice([True, False])
-    score = int(state.get("score", 0))
+    cur = int(state.get("score", 0))
 
     if mercy:
-        state["message"] = (
-            f"🙏 Galio shows mercy! You exit the dungeon alive. Final score: {score}"
-        )
-        state["combat_state"] = None
-        state["health"] = 0  # triggers end flow
+        awarded = int(math.ceil(cur / 2.0))
+        state["message"] = f"🙏 Galio shows mercy! Final score: {awarded} (auto-saved)."
+        state["force_score_override"] = awarded
+        state["force_save"] = True
+        state["health"] = 0  # triggers auto-save path in render_game_interface
     else:
-        state["message"] = (
-            "💀 He smashed you in pieces. Galio has no mercy for interlopers!"
-        )
+        state["message"] = "💀 He smashed you in pieces. Galio has no mercy!"
         state["combat_state"] = None
-        state["health"] = 0
+        state["health"] = 0  # death flow (user may save 0 or discard)
 
 
 def handle_run_away(state: Dict[str, Any]) -> None:
@@ -472,8 +464,9 @@ def handle_run_away(state: Dict[str, Any]) -> None:
     state["combat_state"] = None  # next render spawns new enemy
 
 
-def render_victory_screen(state: Dict[str, Any]) -> None:
-    """Post-victory loot + choices."""
+def render_victory_screen(
+    state: Dict[str, Any], pid: str, supabase, _today_key_utc, _set_best_of_day
+) -> None:
     enemy = state.get("current_enemy", "")
     score = int(state.get("score", 0))
 
@@ -498,20 +491,24 @@ def render_victory_screen(state: Dict[str, Any]) -> None:
         else:
             state["message"] = "⚔️ You continue your adventure!"
         state["combat_state"] = None
-        st.rerun()
+        # Spawn and render next enemy immediately (snappy)
+        spawn_new_enemy(state)
+        render_combat_screen(state)
+        return
 
     if c2.button("🚪 Exit Dungeon (no save)", use_container_width=True):
-        final_score = int(state.get("score", 0))
-        state["message"] = f"🏁 You leave with {final_score} victory/victories."
-        state["health"] = 0  # end without saving
-        st.rerun()
+        state.clear()
+        st.warning("Run discarded.")
+        st.experimental_rerun()
 
     if c3.button("💾 Save Score & Exit", use_container_width=True):
-        # This button simply signals the outer loop to present save UI;
-        # we emulate defeat flow to reuse the save path.
-        state["message"] = f"💾 Final score: {int(state.get('score', 0))}."
-        state["health"] = 0
-        st.rerun()
+        _galios_den_finalize_and_save(
+            state, pid, supabase, _today_key_utc, _set_best_of_day
+        )
+        state.clear()
+        st.success("Saved! See you next time.")
+        st.balloons()
+        st.experimental_rerun()
 
 
 # --------------------------- Leaderboard -------------------------------------
@@ -524,11 +521,9 @@ def render_daily_leaderboard(today_key: str, supabase, players_df) -> None:
         if supabase:
             best_rows = (
                 supabase.table("minigame_scores")
-                .select("player_id, score")
+                .select("player_id, score, duration_s")
                 .eq("date_key", today_key)
                 .eq("is_best_for_day", True)
-                .order("score", desc=True)
-                .limit(100)
                 .execute()
                 .data
                 or []
@@ -546,10 +541,23 @@ def render_daily_leaderboard(today_key: str, supabase, players_df) -> None:
                         on="player_id",
                         how="left",
                     )
-                df = df.rename(columns={"name": "Player", "score": "Enemies Defeated"})
+
+                # Sort: highest score, then shortest time (None at bottom)
+                sort_time = df["duration_s"].fillna(10**12)
+                df = df.assign(_sort_time=sort_time).sort_values(
+                    ["score", "_sort_time"], ascending=[False, True]
+                )
+
+                df = df.rename(
+                    columns={
+                        "name": "Player",
+                        "score": "Enemies Defeated",
+                        "duration_s": "Time (s)",
+                    }
+                )
                 df.insert(0, "#", range(1, len(df) + 1))
                 st.dataframe(
-                    df[["#", "Player", "Enemies Defeated"]],
+                    df[["#", "Player", "Enemies Defeated", "Time (s)"]],
                     use_container_width=True,
                     hide_index=True,
                 )

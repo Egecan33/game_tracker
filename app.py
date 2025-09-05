@@ -415,9 +415,9 @@ def _login_gate(players_df: pd.DataFrame, key_prefix: str) -> Optional[str]:
         if ok_pin and ok_emo:
             st.session_state[f"{key_prefix}_verified_pid"] = row["id"]
             st.session_state[f"{key_prefix}_verified_until"] = _utc_now() + timedelta(
-                minutes=5
+                minutes=25
             )
-            st.success("Verified for 5 minutes")
+            st.success("Verified for 25 minutes")
             return row["id"]
         else:
             st.error("Wrong PIN or emoji.")
@@ -430,18 +430,18 @@ def _set_best_of_day(date_key: str, player_id: str):
     if not supabase:
         return
     try:
-        # reset flags for that player/day
         supabase.table("minigame_scores").update({"is_best_for_day": False}).eq(
             "date_key", date_key
         ).eq("player_id", player_id).execute()
-        # pick best score (tie: earliest finish wins)
+
         best = (
             supabase.table("minigame_scores")
-            .select("id,score,finished_at")
+            .select("id,score,duration_s,finished_at")
             .eq("date_key", date_key)
             .eq("player_id", player_id)
             .order("score", desc=True)
-            .order("finished_at", desc=False)
+            .order("duration_s", desc=False)  # ← NEW: shortest time wins ties
+            .order("finished_at", desc=False)  # stable fallback
             .limit(1)
             .execute()
         )
