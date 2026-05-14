@@ -8,6 +8,7 @@
 from __future__ import annotations
 import os
 import uuid
+import hmac
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import date, datetime, time, timedelta
 
@@ -25,6 +26,211 @@ from galios_den_game import render_galios_den_game
 load_dotenv()
 
 st.set_page_config(page_title="🎯 Game Sessions Tracker", page_icon="🏆", layout="wide")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Global theme + responsive CSS (system theme aware; no JS required)
+# ─────────────────────────────────────────────────────────────────────────────
+def inject_global_css() -> None:
+    st.markdown(
+        """
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <style>
+        :root{
+          --gt-radius: 12px;
+          --gt-radius-sm: 8px;
+          --gt-pad: 14px;
+          --gt-pad-sm: 10px;
+          --gt-gap: 12px;
+          --gt-shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.06);
+          --gt-card-bg: rgba(127,127,127,0.08);
+          --gt-card-border: rgba(127,127,127,0.22);
+          --gt-accent: #7C5CFF;
+          --gt-good: #22c55e;
+          --gt-bad: #ef4444;
+          --gt-muted: rgba(127,127,127,0.85);
+        }
+        @media (prefers-color-scheme: dark){
+          :root{
+            --gt-card-bg: rgba(255,255,255,0.04);
+            --gt-card-border: rgba(255,255,255,0.10);
+            --gt-shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
+          }
+        }
+
+        /* tighten outer container; let it breathe on big screens, hug edges on mobile */
+        .block-container{
+          padding-top: 1.2rem !important;
+          padding-bottom: 2rem !important;
+          max-width: 1280px;
+        }
+
+        /* shared card primitives */
+        .gt-card{
+          background: var(--gt-card-bg);
+          border: 1px solid var(--gt-card-border);
+          border-radius: var(--gt-radius);
+          padding: var(--gt-pad);
+          box-shadow: var(--gt-shadow);
+        }
+        .gt-nameplate{
+          display:inline-block;
+          padding: 10px 14px;
+          border-radius: var(--gt-radius);
+          background: var(--gt-card-bg);
+          border: 1px solid var(--gt-card-border);
+          box-shadow: var(--gt-shadow);
+          max-width: 100%;
+        }
+        .gt-nameplate .gt-name{
+          font-size: clamp(15px, 2.2vw, 20px);
+          font-weight: 700;
+          line-height: 1.15;
+          word-break: break-word;
+        }
+        .gt-nameplate .gt-sub{
+          font-size: clamp(11px, 1.6vw, 13px);
+          opacity: .8;
+          margin-top: 2px;
+          word-break: break-word;
+        }
+
+        .gt-metric{
+          text-align: center;
+          padding: var(--gt-pad-sm) var(--gt-pad);
+          border-radius: var(--gt-radius-sm);
+          background: var(--gt-card-bg);
+          border: 1px solid var(--gt-card-border);
+          min-height: 86px;
+          display: flex; flex-direction: column; justify-content: center;
+        }
+        .gt-metric .gt-metric-title{
+          font-size: clamp(11px, 1.6vw, 13px);
+          font-weight: 600;
+          opacity: .85;
+          letter-spacing: .02em;
+        }
+        .gt-metric .gt-metric-value{
+          font-size: clamp(15px, 2.4vw, 20px);
+          font-weight: 700;
+          margin-top: 2px;
+          white-space: normal;
+          word-break: break-word;
+          line-height: 1.15;
+        }
+        .gt-metric .gt-metric-delta{
+          font-size: clamp(10px, 1.4vw, 12px);
+          margin-top: 4px;
+        }
+
+        /* accent stripe on left of nameplate + card hover lift */
+        .gt-nameplate{
+          position: relative;
+          padding-left: 18px;
+        }
+        .gt-nameplate::before{
+          content: "";
+          position: absolute; left: 0; top: 10%; bottom: 10%;
+          width: 4px; border-radius: 4px;
+          background: linear-gradient(180deg, var(--gt-accent), #22c1ff);
+        }
+        .gt-card, .gt-metric{
+          transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+        }
+        .gt-card:hover, .gt-metric:hover{
+          transform: translateY(-1px);
+          border-color: var(--gt-accent);
+        }
+
+        /* hero banner (used by st.title row) */
+        .gt-hero{
+          background: linear-gradient(135deg, rgba(124,92,255,.18), rgba(34,193,255,.10) 60%, transparent);
+          border: 1px solid var(--gt-card-border);
+          border-radius: var(--gt-radius);
+          padding: 10px 14px;
+          margin: 4px 0 8px;
+          box-shadow: var(--gt-shadow);
+        }
+
+        /* medal pop for top 3 in dataframes */
+        [data-testid="stDataFrame"] td:has(div:contains("🥇")),
+        [data-testid="stDataFrame"] td:has(div:contains("🥈")),
+        [data-testid="stDataFrame"] td:has(div:contains("🥉")){
+          filter: drop-shadow(0 0 4px rgba(255,200,80,.45));
+        }
+
+        /* make Streamlit column rows wrap on narrow screens so layouts don't crush */
+        @media (max-width: 720px){
+          .block-container{
+            padding-left: .65rem !important;
+            padding-right: .65rem !important;
+          }
+          [data-testid="stHorizontalBlock"]{
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+          }
+          [data-testid="stHorizontalBlock"] > div[data-testid="column"]{
+            flex: 1 1 calc(50% - 8px) !important;
+            min-width: calc(50% - 8px) !important;
+          }
+          /* metric tiles stay 2-up on phones */
+          .gt-metric{ min-height: 72px; }
+          /* tighten Streamlit metric font */
+          [data-testid="stMetricValue"]{
+            font-size: clamp(16px, 5vw, 22px) !important;
+          }
+          [data-testid="stMetricLabel"] p{
+            font-size: 12px !important;
+          }
+          /* tabs scroll horizontally instead of breaking layout */
+          [data-baseweb="tab-list"]{
+            overflow-x: auto !important;
+            scrollbar-width: thin;
+          }
+          /* dataframes get a horizontal scroll instead of overflowing */
+          [data-testid="stDataFrame"]{
+            overflow-x: auto !important;
+          }
+          h1{ font-size: clamp(22px, 6vw, 28px) !important; }
+          h2{ font-size: clamp(18px, 5vw, 24px) !important; }
+          h3{ font-size: clamp(16px, 4.5vw, 20px) !important; }
+        }
+
+        @media (max-width: 480px){
+          [data-testid="stHorizontalBlock"] > div[data-testid="column"]{
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+          }
+        }
+
+        /* plotly charts: never overflow on small screens */
+        .js-plotly-plot, .plotly, .plot-container{ max-width: 100% !important; }
+
+        /* buttons: comfortable tap targets */
+        .stButton > button{
+          border-radius: var(--gt-radius-sm);
+          padding: .55rem .9rem;
+          min-height: 40px;
+          font-weight: 600;
+        }
+        @media (max-width: 720px){
+          .stButton > button{ width: 100%; }
+        }
+
+        /* sidebar: a touch more breathing room on mobile */
+        @media (max-width: 720px){
+          section[data-testid="stSidebar"]{ width: 86vw !important; }
+        }
+
+        /* keep cosmetic-font scopes from being overridden by global rules */
+        .cosmetic-font, [class^="pfont-"], [class*=" pfont-"]{ font-family: inherit; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+inject_global_css()
 
 
 def _sec(key: str, default: str = "") -> str:
@@ -1462,10 +1668,11 @@ def render_h2h_heatmap(h2h_df: pd.DataFrame, title: str = "Head-to-Head") -> Non
         annotations=annotations,
         xaxis=dict(title="", side="top", tickangle=45),
         yaxis=dict(title="", autorange="reversed"),
-        margin=dict(l=0, r=0, t=60, b=0),
-        height=400 + 20 * len(h2h_df),
+        margin=dict(l=4, r=4, t=56, b=4),
+        autosize=True,
+        height=max(360, 360 + 18 * len(h2h_df)),
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
 # TZ helper function
@@ -1764,11 +1971,9 @@ def render_locker():
     _inject_font_css(eq.get("font"), scope)
     st.markdown(
         f"""
-        <div class="player-nameplate {scope}" style="
-            padding:12px 16px;border-radius:10px;background:rgba(240,240,240,0.6);
-            border:2px solid #ddd;display:inline-block;">
-            <div style="font-size:20px;font-weight:700;">{pname}</div>
-            <div style="font-size:13px;opacity:0.8;">
+        <div class="gt-nameplate player-nameplate {scope}">
+            <div class="gt-name">{pname}</div>
+            <div class="gt-sub">
                 {ITEM_DB.get(eq.get('badge',''),{}).get('icon','')} {ITEM_DB.get(eq.get('badge',''),{}).get('label','No badge')}
                 • {ITEM_DB.get(eq.get('title',''),{}).get('label','No title')}
             </div>
@@ -1964,23 +2169,70 @@ def render_locker():
 # Sidebar
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _pw_match(actual: str, expected: str) -> bool:
+    """Constant-time password comparison so timing doesn't leak length/prefix."""
+    if not actual or not expected:
+        return False
+    try:
+        return hmac.compare_digest(str(actual), str(expected))
+    except Exception:
+        return False
+
+
+def _role_gate(role_key: str, expected_pw: str, label: str) -> bool:
+    """
+    Persistent role gate: once verified, stays unlocked for 30 minutes in this session.
+    Includes a small backoff after repeated bad attempts (no DB writes — session-state only).
+    """
+    sess = st.session_state
+    until_key = f"_role_until_{role_key}"
+    fail_key = f"_role_fail_{role_key}"
+    lock_until_key = f"_role_lock_until_{role_key}"
+
+    now = _utc_now() if "_utc_now" in globals() else datetime.utcnow().replace(tzinfo=None)
+
+    if sess.get(until_key) and now < sess[until_key]:
+        st.success(f"{label} session active — auto-locks in "
+                   f"{int((sess[until_key]-now).total_seconds()/60)} min")
+        if st.button(f"Lock {label}", key=f"_lock_btn_{role_key}", use_container_width=True):
+            sess.pop(until_key, None)
+            st.rerun()
+        return True
+
+    if sess.get(lock_until_key) and now < sess[lock_until_key]:
+        wait = int((sess[lock_until_key] - now).total_seconds())
+        st.error(f"Too many bad attempts. Wait {wait}s.")
+        st.stop()
+
+    pw = st.text_input(f"{label} password", type="password", key=f"_pw_input_{role_key}")
+    if st.button(f"Unlock {label}", key=f"_pw_btn_{role_key}", use_container_width=True):
+        if _pw_match(pw, expected_pw):
+            sess[until_key] = now + timedelta(minutes=30)
+            sess[fail_key] = 0
+            st.rerun()
+        else:
+            sess[fail_key] = int(sess.get(fail_key, 0)) + 1
+            if sess[fail_key] >= 5:
+                sess[lock_until_key] = now + timedelta(seconds=60)
+                sess[fail_key] = 0
+                st.error("Locked for 60s after 5 bad attempts.")
+            else:
+                st.error(f"Wrong password ({5 - sess[fail_key]} tries left).")
+    st.warning(f"Enter the correct {label.lower()} password to access {label} tools.")
+    st.stop()
+    return False
+
+
 with st.sidebar:
     st.header("Controls")
     mode = st.radio("Mode", ["General", "Moderator", "Admin"], horizontal=True)
 
+    moderator_name = ""
     if mode == "Moderator":
-        mpw = st.text_input("Moderator password", type="password")
         moderator_name = st.text_input("Your name (shows in approvals)", "")
-        if mpw != MODERATOR_PASSWORD:
-            st.warning(
-                "Enter the correct moderator password to access Moderator tools."
-            )
-            st.stop()
+        _role_gate("moderator", MODERATOR_PASSWORD, "Moderator")
     if mode == "Admin":
-        pw = st.text_input("Admin password", type="password")
-        if pw != ADMIN_PASSWORD:
-            st.warning("Enter the correct admin password to access Admin tools.")
-            st.stop()
+        _role_gate("admin", ADMIN_PASSWORD, "Admin")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # General (View-only)
@@ -2039,8 +2291,36 @@ if mode == "General":
             if not min_date or not max_date or pd.isna(min_date) or pd.isna(max_date):
                 min_date = date.today()
                 max_date = date.today()
+
+            # Quick presets — including ALL TIME (replaces any prior 2-year default)
+            dr_key = "lb_date_range"
+            if dr_key not in st.session_state:
+                st.session_state[dr_key] = (min_date, max_date)
+
+            preset = c2.radio(
+                "Range preset",
+                options=["All time", "This year", "Last 365d", "Last 90d", "Last 30d", "Custom"],
+                horizontal=True,
+                key="lb_range_preset",
+            )
+            today_ = date.today()
+            if preset == "All time":
+                st.session_state[dr_key] = (min_date, max_date)
+            elif preset == "This year":
+                st.session_state[dr_key] = (date(today_.year, 1, 1), max_date)
+            elif preset == "Last 365d":
+                st.session_state[dr_key] = (max(min_date, today_ - timedelta(days=365)), max_date)
+            elif preset == "Last 90d":
+                st.session_state[dr_key] = (max(min_date, today_ - timedelta(days=90)), max_date)
+            elif preset == "Last 30d":
+                st.session_state[dr_key] = (max(min_date, today_ - timedelta(days=30)), max_date)
+
             start_date, end_date = c2.date_input(
-                "Date range", value=(min_date, max_date)
+                "Date range",
+                value=st.session_state[dr_key],
+                min_value=min_date,
+                max_value=max_date,
+                key="lb_date_input",
             )
 
             # If exactly one game is selected, show a polished info card (+ BGG link if provided)
@@ -2269,10 +2549,10 @@ if mode == "General":
                     display_delta = delta if delta else ""
                     st.markdown(
                         f"""
-                        <div style="text-align:center; padding:0.5em; border-radius:8px; background-color:rgba(240,240,240,0.5);">
-                            <div style="font-size:0.9em; font-weight:bold;">{title}</div>
-                            <div style="font-size:1.1em; white-space:normal; word-break:break-word;">{display_value}</div>
-                            <div style="color:{color}; font-size:0.85em;">{display_delta}</div>
+                        <div class="gt-metric">
+                            <div class="gt-metric-title">{title}</div>
+                            <div class="gt-metric-value">{display_value}</div>
+                            <div class="gt-metric-delta" style="color:{color};">{display_delta}</div>
                         </div>
                         """,
                         unsafe_allow_html=True,
@@ -2463,9 +2743,11 @@ if mode == "General":
                             xaxis_title="Date",
                             yaxis_title="ELO",
                             hovermode="x unified",
-                            margin=dict(l=0, r=0, t=60, b=0),
+                            margin=dict(l=4, r=4, t=56, b=4),
+                            autosize=True,
+                            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
                         )
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
                     else:
                         st.info("No data for selected players in current filters.")
                 else:
@@ -2579,11 +2861,9 @@ if mode == "General":
             badge_icon = ITEM_DB.get(eq.get("badge", ""), {}).get("icon", "")
             st.markdown(
                 f"""
-                <div class="player-nameplate {scope}" style="
-                    padding:12px 16px;border-radius:10px;background:rgba(240,240,240,0.6);
-                    border:2px solid #ddd;display:inline-block;">
-                    <div style="font-size:20px;font-weight:700;">{selected_name}</div>
-                    <div style="font-size:13px;opacity:0.8;">{badge_icon} {title_txt or 'No title'}</div>
+                <div class="gt-nameplate player-nameplate {scope}">
+                    <div class="gt-name">{selected_name}</div>
+                    <div class="gt-sub">{badge_icon} {title_txt or 'No title'}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
