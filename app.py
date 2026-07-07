@@ -1,8 +1,9 @@
-# app.py — Streamlit Game Sessions Tracker (Supabase)
+# app.py — Streamlit Game Sessions Tracker (local SQLite)
 # ---------------------------------------------------
 # Track any games (board, video, sports), sessions, players, winners/teams,
 # and show detailed leaderboards. Includes FFA, Team, Co-op, Solo.
 # ELO configuration lives in Admin (General is view-only).
+# Data layer: local_db.py (SQLite drop-in for the retired Supabase project).
 # ---------------------------------------------------
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ import plotly.graph_objects as go  # for H2H heatmap
 from galios_den_game import render_galios_den_game
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Environment & Supabase
+# Environment & local database
 # ─────────────────────────────────────────────────────────────────────────────
 
 load_dotenv()
@@ -35,29 +36,19 @@ def _sec(key: str, default: str = "") -> str:
         return os.getenv(key, default)
 
 
-SUPABASE_URL = _sec("SUPABASE_URL", "").strip()
-SUPABASE_ANON_KEY = _sec("SUPABASE_ANON_KEY", "").strip()
 ADMIN_PASSWORD = _sec("ADMIN_PASSWORD", "change-me")
 MODERATOR_PASSWORD = _sec("MODERATOR_PASSWORD", "mod-me")
 
-# Supabase v2 client
-try:
-    from supabase import create_client, Client
-except Exception:
-    create_client = None
-    Client = Any  # type: ignore
+# Local SQLite client with the same table()/select()/eq()/execute() interface
+# the app was written against. Seeds itself from supabase_backup/ on first run.
+from local_db import LocalSupabaseClient, get_client
 
-supabase: Optional[Client] = None
-if SUPABASE_URL and SUPABASE_ANON_KEY and create_client:
-    try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-    except Exception as e:
-        supabase = None
-        st.sidebar.error(f"Supabase init failed: {e}")
-else:
-    st.sidebar.warning(
-        "Supabase credentials missing. Set SUPABASE_URL and SUPABASE_ANON_KEY."
-    )
+supabase: Optional[LocalSupabaseClient] = None
+try:
+    supabase = get_client()
+except Exception as e:
+    supabase = None
+    st.sidebar.error(f"Local database init failed: {e}")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Daily mini-game constants, fonts, helpers

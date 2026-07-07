@@ -1,0 +1,17 @@
+# Live local database (seeded from supabase_backup/ on first run)
+local_data/
+
+# SQLite sidecar files
+*.sqlite-shm
+*.sqlite-wal
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# OS
+.DS_Store

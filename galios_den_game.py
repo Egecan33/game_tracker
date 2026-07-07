@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import math
 import random
-from datetime import datetime, timedelta, date, UTC
+from datetime import datetime, timedelta, date, timezone
+
+UTC = timezone.utc  # datetime.UTC alias, works on Python < 3.11
 from typing import Any, Dict
 
 import pandas as pd
