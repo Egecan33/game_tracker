@@ -1,0 +1,2909 @@
+[
+  {
+    "id": "aa662d94-187f-445b-8796-6139ceaf3d49",
+    "session_id": "0075b72f-b35c-4ca5-819f-d31be15162df",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "db7ef8d4-5c71-4924-9c3c-a5990e3dd9b0",
+    "session_id": "0075b72f-b35c-4ca5-819f-d31be15162df",
+    "player_id": "528b549f-1743-45d2-aeb7-6dcad553e403",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "0675fec7-9d25-41b4-8268-bf0ed4420fe9",
+    "session_id": "00f55234-3b52-4fe4-9680-210863eef02e",
+    "player_id": "0adcf663-60e0-4211-892e-245db6dd38db",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "205b1faf-2e48-40fb-88d1-bd42554a7d57",
+    "session_id": "00f55234-3b52-4fe4-9680-210863eef02e",
+    "player_id": "3958cc97-5507-421f-a821-fd80cc9e7f7f",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "5f6fdc66-5ec5-4bbf-b40a-cbc37f3d5f7a",
+    "session_id": "00f55234-3b52-4fe4-9680-210863eef02e",
+    "player_id": "3c2deced-ddd6-49e8-b3cf-5d1dfb04d45f",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "d2b5c773-1cd5-4dd7-9fd4-691e95569e2e",
+    "session_id": "00f55234-3b52-4fe4-9680-210863eef02e",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "3a4ba484-0c9c-4bf3-8406-41b213813d21",
+    "session_id": "028b0722-d5bc-40f9-875e-b17b2cbe4191",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 2.0,
+    "is_winner": true
+  },
+  {
+    "id": "e065214b-55b3-4b7d-aca7-0d303ed185b1",
+    "session_id": "028b0722-d5bc-40f9-875e-b17b2cbe4191",
+    "player_id": "3d63287a-93a2-4808-bf9b-66d046ab1eb1",
+    "team": null,
+    "position": 2,
+    "points": 1.0,
+    "is_winner": false
+  },
+  {
+    "id": "9d101faf-2e93-4fd9-95c7-4dd5897a2310",
+    "session_id": "02dc212c-80b9-4fdb-8138-364a0cc33bf7",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "SOLO",
+    "position": null,
+    "points": 3.0,
+    "is_winner": true
+  },
+  {
+    "id": "40b9a0ec-e916-45ff-8a97-a82e9b9dbdb9",
+    "session_id": "09dec712-64a0-428d-84a6-cb3cf8214947",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "886f9343-a8ce-4f41-880b-2b049293053d",
+    "session_id": "09dec712-64a0-428d-84a6-cb3cf8214947",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "ded56174-0a44-4644-9766-955740acf205",
+    "session_id": "11e8bb81-a822-4e25-a4b7-e08c6f27c705",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "f4eabd22-7559-4e92-8aa2-55b414df324a",
+    "session_id": "11e8bb81-a822-4e25-a4b7-e08c6f27c705",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "4c941204-b41e-43f2-9aa5-58bbe5ac2796",
+    "session_id": "131b44a4-37a3-425c-a25b-ac353a0c808f",
+    "player_id": "3958cc97-5507-421f-a821-fd80cc9e7f7f",
+    "team": null,
+    "position": 1,
+    "points": 104.0,
+    "is_winner": true
+  },
+  {
+    "id": "04d3b63b-f03c-476e-ad73-923165575b03",
+    "session_id": "131b44a4-37a3-425c-a25b-ac353a0c808f",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 2,
+    "points": 97.0,
+    "is_winner": false
+  },
+  {
+    "id": "6f751067-00ac-4157-8a69-fd71d4620a5d",
+    "session_id": "1524b2bd-235e-415d-a660-91ede90eea16",
+    "player_id": "0adcf663-60e0-4211-892e-245db6dd38db",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "af7a1bca-448c-4030-aafc-658fdc4d4065",
+    "session_id": "1524b2bd-235e-415d-a660-91ede90eea16",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "34646ef2-b862-4e7d-8c38-9fb80fe0ed9a",
+    "session_id": "1542b8a8-3216-4c1e-82a7-f09936304b04",
+    "player_id": "6fa73c67-b39d-4270-9aa2-971adca9aaf9",
+    "team": "COOP",
+    "position": null,
+    "points": 1.0,
+    "is_winner": true
+  },
+  {
+    "id": "3de41d2f-eedc-442e-b178-e45fa82fa399",
+    "session_id": "1542b8a8-3216-4c1e-82a7-f09936304b04",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 1.0,
+    "is_winner": true
+  },
+  {
+    "id": "0ccea585-5e51-4403-bcbb-0f3118dc11c8",
+    "session_id": "159a3025-a86a-4865-ac0c-96343ab6e9dc",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "3b61ece9-f722-4e98-96c4-e50ae8df1861",
+    "session_id": "159a3025-a86a-4865-ac0c-96343ab6e9dc",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "97295820-6825-44e1-9a98-94b5c3e670f1",
+    "session_id": "159a3025-a86a-4865-ac0c-96343ab6e9dc",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "c9f10356-23b6-4ad4-bcd2-77abf8df8b77",
+    "session_id": "159a3025-a86a-4865-ac0c-96343ab6e9dc",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "067ee4c9-8ed1-4120-bdfc-e5876c163a50",
+    "session_id": "193a5fe2-eb65-48d4-b9d4-f503bc5a3b55",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "837bd585-3d51-4611-8442-b652448987b4",
+    "session_id": "193a5fe2-eb65-48d4-b9d4-f503bc5a3b55",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "3d3cb9ca-d8ac-48ec-8e88-3ff0a4bcd53e",
+    "session_id": "1a628843-83a1-45d2-a192-cef9fc2720f6",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "c27c9e22-0008-45e2-b6d4-38d7ce194ef2",
+    "session_id": "1a628843-83a1-45d2-a192-cef9fc2720f6",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "09b07c3d-0cbe-48de-a13d-c8b34b026665",
+    "session_id": "1ab60851-6d32-43fd-8cd3-149fbc089370",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "751a2635-bb52-4473-944e-0788427c16b7",
+    "session_id": "1ab60851-6d32-43fd-8cd3-149fbc089370",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "a1ef702c-cd2e-4947-9d41-5096701dcc2c",
+    "session_id": "1ab60851-6d32-43fd-8cd3-149fbc089370",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "e45f3206-3aa6-48fd-81f0-81b6a8ecd3fe",
+    "session_id": "1ab60851-6d32-43fd-8cd3-149fbc089370",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "d42ceb9b-21a5-4756-a5bb-9149f69d393b",
+    "session_id": "1e0b715c-185f-48b0-b76e-364a23a39ce8",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "0a87ad9c-44b3-4980-a12e-3e321c7928bf",
+    "session_id": "1e0b715c-185f-48b0-b76e-364a23a39ce8",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "3f9a7d98-1652-45e2-ba13-10d2cb488e85",
+    "session_id": "1e0b715c-185f-48b0-b76e-364a23a39ce8",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "fe8c10ce-b6de-411b-8828-5959dc6cf5d9",
+    "session_id": "1e0b715c-185f-48b0-b76e-364a23a39ce8",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": null,
+    "position": 4,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "488c4dee-e88f-4b82-9d7f-7a0d803d3982",
+    "session_id": "223d5a37-dfd4-43d7-b3d3-7fa9ea849f56",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "56a70204-a768-4e0d-a935-9ddce8a82f56",
+    "session_id": "223d5a37-dfd4-43d7-b3d3-7fa9ea849f56",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "b16f301d-5a01-4249-93f9-69cfd960c3f0",
+    "session_id": "223d5a37-dfd4-43d7-b3d3-7fa9ea849f56",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "cc0946ca-c7ad-4471-8871-2a2da1ff35cf",
+    "session_id": "223d5a37-dfd4-43d7-b3d3-7fa9ea849f56",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "10cebe3d-237f-4c75-a81f-83ab4d8d1616",
+    "session_id": "25f3d529-9817-4bd6-95db-8dd70fb3280c",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "15b4bbf9-61fc-4a6b-8ece-d788830b3207",
+    "session_id": "25f3d529-9817-4bd6-95db-8dd70fb3280c",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "9edd5147-5d10-4c3f-8759-6d6327b67d22",
+    "session_id": "25f3d529-9817-4bd6-95db-8dd70fb3280c",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "b3bd0f63-3221-478c-a6e6-767478748801",
+    "session_id": "25f3d529-9817-4bd6-95db-8dd70fb3280c",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "098b361f-aa7f-468f-9f8b-0f34fb6b9e63",
+    "session_id": "2739cf44-6e71-4b15-9a4b-0643c70873a4",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "bb70124b-ac8b-4ae9-850d-6eddf85766b8",
+    "session_id": "2739cf44-6e71-4b15-9a4b-0643c70873a4",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "c2182e0e-f4c3-4633-aca3-9f84f54340dd",
+    "session_id": "2739cf44-6e71-4b15-9a4b-0643c70873a4",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "c4b619ef-96e9-41b6-9398-68c574647ae7",
+    "session_id": "2739cf44-6e71-4b15-9a4b-0643c70873a4",
+    "player_id": "7df778e0-7327-45ba-93e5-b79b31bebca3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "c4c67e26-cb23-4d6c-9688-c8e31d1f58c4",
+    "session_id": "2739cf44-6e71-4b15-9a4b-0643c70873a4",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "f1591538-c2b2-4bee-a218-ed284f0e3f65",
+    "session_id": "2739cf44-6e71-4b15-9a4b-0643c70873a4",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "4b076cf2-d395-402d-b6d4-0740bd1d2a7e",
+    "session_id": "297da22d-b91e-454b-b8f3-bde94d53721b",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "bb9f5f63-9f7d-40bb-bf60-a9aeaeec5884",
+    "session_id": "297da22d-b91e-454b-b8f3-bde94d53721b",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "c1a98e7b-2d23-4f6e-addd-906a15fce794",
+    "session_id": "297da22d-b91e-454b-b8f3-bde94d53721b",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "f82bdb8c-d53a-466a-a953-7e6ef29661fe",
+    "session_id": "297da22d-b91e-454b-b8f3-bde94d53721b",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "1b8478b3-7efd-4104-afff-35a4bf3180f0",
+    "session_id": "2b8eab03-6298-43ff-9a2f-dc5e90c7ef69",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "57eea266-d564-4211-8115-f2936924e3eb",
+    "session_id": "2b8eab03-6298-43ff-9a2f-dc5e90c7ef69",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "92cab82a-8466-4619-a9ec-4ee6ec24b486",
+    "session_id": "2b8eab03-6298-43ff-9a2f-dc5e90c7ef69",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "de7ff75f-8d82-447f-a931-7eddc95bfab9",
+    "session_id": "2b8eab03-6298-43ff-9a2f-dc5e90c7ef69",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "7aa21af0-cc93-4ddd-bfba-bc382f035cbb",
+    "session_id": "2e8c7f2a-f441-41cf-b1cd-03e25123c538",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "cc58584c-6dfb-4887-886c-f586d42f4fe0",
+    "session_id": "2e8c7f2a-f441-41cf-b1cd-03e25123c538",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "c26f64cb-2015-43b6-a703-7968750f49ca",
+    "session_id": "2f09b52e-4495-4b80-b550-727c41a74d09",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "49487d46-0dc1-40f6-926e-36241d677c63",
+    "session_id": "2f09b52e-4495-4b80-b550-727c41a74d09",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "32262f42-f57b-4929-bc35-c069e9f0c5f6",
+    "session_id": "3208fa59-601d-4eba-8fbe-1ea01c0c7814",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "35dac98b-7fc1-469a-af6b-457b1838627c",
+    "session_id": "3208fa59-601d-4eba-8fbe-1ea01c0c7814",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "f330f691-1215-4dfb-8289-fc4706dc4d49",
+    "session_id": "3208fa59-601d-4eba-8fbe-1ea01c0c7814",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "2c7f47f0-d399-4607-985e-9623db6ef728",
+    "session_id": "34759278-5104-4c0b-98c7-1e5c8d1204f5",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "c2a51d54-7caf-4634-9a72-89773b888c3f",
+    "session_id": "34759278-5104-4c0b-98c7-1e5c8d1204f5",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "28dce1ff-96a8-4a42-aac3-9335060196be",
+    "session_id": "3798f1d0-063a-420b-bf2d-4d8e578730fa",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "36ace17b-4a65-419c-9963-172b28b73f24",
+    "session_id": "3798f1d0-063a-420b-bf2d-4d8e578730fa",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "8713645f-9028-4c0d-a589-d19d47c08313",
+    "session_id": "3798f1d0-063a-420b-bf2d-4d8e578730fa",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "13a9b700-1fec-4851-b471-fd50682f86c1",
+    "session_id": "38b03db2-0dc8-41d4-9d70-4f8b84f0723d",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "84941d20-3820-442a-bafd-691146c4acd9",
+    "session_id": "38b03db2-0dc8-41d4-9d70-4f8b84f0723d",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "88faf330-e0b8-4a7f-ab4c-08ca40103931",
+    "session_id": "38b03db2-0dc8-41d4-9d70-4f8b84f0723d",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "be11ba1f-13db-4d7a-8e8b-8cd680c2f7ac",
+    "session_id": "38b03db2-0dc8-41d4-9d70-4f8b84f0723d",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "dfcb1d1f-ac59-480a-a09f-6c6b7c0d7e36",
+    "session_id": "38b03db2-0dc8-41d4-9d70-4f8b84f0723d",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "32263296-54d1-4260-92b5-0b8fdcd625dd",
+    "session_id": "3e332da2-c0d6-4ee7-8a6c-65b9010b7f38",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "61af198a-fd5d-49c8-ac53-b230df8001c3",
+    "session_id": "3e332da2-c0d6-4ee7-8a6c-65b9010b7f38",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "ddc3abd1-447e-4824-abb8-7f4be645b191",
+    "session_id": "4010351d-8456-4bf9-bc09-9012c241ebbc",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "7a6357df-5611-4294-be4c-6539213a7980",
+    "session_id": "4010351d-8456-4bf9-bc09-9012c241ebbc",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "d4729718-c802-41c0-9695-52d95c57d2d3",
+    "session_id": "4010351d-8456-4bf9-bc09-9012c241ebbc",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "0a3ee2c0-c19f-4662-95a3-55f973e1ccc0",
+    "session_id": "4065631b-f52f-4c0e-a22d-195ea9ef0e8e",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "SOLO",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "60095db6-ec14-48e1-95bc-8e050ba424a5",
+    "session_id": "457d00c7-9c0d-4f3f-80a1-4979e23eb39e",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "710cf585-48be-4c58-98d5-f6c5ca7e3d81",
+    "session_id": "457d00c7-9c0d-4f3f-80a1-4979e23eb39e",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "78a448f2-47d9-4721-ac38-79efd0dc54b3",
+    "session_id": "457d00c7-9c0d-4f3f-80a1-4979e23eb39e",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "b1cd9804-e68c-4fac-a555-eeac5ef0717b",
+    "session_id": "457d00c7-9c0d-4f3f-80a1-4979e23eb39e",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "b0c6309b-a8c8-4c1e-8d70-8b8973686877",
+    "session_id": "47e800d5-60c6-40aa-9fe2-89c1aa7c5c29",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 33.0,
+    "is_winner": true
+  },
+  {
+    "id": "72bbd6c8-864b-41a9-95ca-6de8ad5a4f06",
+    "session_id": "47e800d5-60c6-40aa-9fe2-89c1aa7c5c29",
+    "player_id": "528b549f-1743-45d2-aeb7-6dcad553e403",
+    "team": null,
+    "position": 2,
+    "points": 3.0,
+    "is_winner": false
+  },
+  {
+    "id": "6b6394e3-6238-4d21-a1a5-207273221ddb",
+    "session_id": "4b1a5eae-487e-462e-aeee-5307c614704f",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "ff5a3c04-252b-475c-a3e8-49c35f8fb8f2",
+    "session_id": "4b1a5eae-487e-462e-aeee-5307c614704f",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "13fef7a0-7a94-4c3e-aaff-da09b5cd1f53",
+    "session_id": "4bc9ef58-3f98-40b7-9296-18e1ef07f5ef",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "2097f6da-1981-4fae-9bb2-465e6afea9bd",
+    "session_id": "4bc9ef58-3f98-40b7-9296-18e1ef07f5ef",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "9b302ab9-a46e-49c5-b7be-52d91c9d5a8e",
+    "session_id": "4bc9ef58-3f98-40b7-9296-18e1ef07f5ef",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "7dca814c-a73e-45ac-a412-af1b0e58cf2a",
+    "session_id": "4cd07841-6f4f-4731-8627-f367bcf77aa3",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "ff69a105-fb40-499a-b9c8-d44bd37cb9c8",
+    "session_id": "4cd07841-6f4f-4731-8627-f367bcf77aa3",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "d38915d8-0f14-4d4b-931c-2d85ac1021b9",
+    "session_id": "4f514295-f808-4348-ba13-060ab2617953",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "d8c45cff-ea3c-4eb6-9541-4667cc1352b6",
+    "session_id": "4f514295-f808-4348-ba13-060ab2617953",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "ecfc22d8-a521-46bc-94f7-f025294ce290",
+    "session_id": "4f514295-f808-4348-ba13-060ab2617953",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "ee7e12be-f61f-49e4-a85d-5405b958d767",
+    "session_id": "4f514295-f808-4348-ba13-060ab2617953",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "239f3dbf-f31e-4ff8-af5e-b26d382b6f63",
+    "session_id": "4fc7f893-7548-48b8-b252-3c01e59a75d7",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "ccd743f0-7f7a-43e9-9edd-98c0ec2000eb",
+    "session_id": "4fc7f893-7548-48b8-b252-3c01e59a75d7",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "f14d9b91-002c-4f57-aa8a-1c07ad55f429",
+    "session_id": "4fc7f893-7548-48b8-b252-3c01e59a75d7",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "14f05ee3-21bc-4f50-a6cc-4a55b4d8c01a",
+    "session_id": "51515cd1-4c7d-42f2-8245-2fab92b59da6",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "2d91ff18-c70f-4060-9c86-b5c697b9ea59",
+    "session_id": "51515cd1-4c7d-42f2-8245-2fab92b59da6",
+    "player_id": "7df778e0-7327-45ba-93e5-b79b31bebca3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "42154c25-1a75-422b-a133-c79350825e93",
+    "session_id": "51515cd1-4c7d-42f2-8245-2fab92b59da6",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "444b7bce-d3c7-49f1-a6a3-c158cdfda993",
+    "session_id": "51515cd1-4c7d-42f2-8245-2fab92b59da6",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "63520dee-46ad-453a-885a-14421a7ab0f2",
+    "session_id": "51515cd1-4c7d-42f2-8245-2fab92b59da6",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "b21bd81c-96d5-475a-896c-5f7ff0e95aba",
+    "session_id": "51515cd1-4c7d-42f2-8245-2fab92b59da6",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "0b29c412-cafe-4a05-80a5-41b52b1341b3",
+    "session_id": "51b13d3d-f59e-4668-8370-00f83979b0d8",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "29576e40-89c3-4840-afdb-758c7695b18b",
+    "session_id": "51b13d3d-f59e-4668-8370-00f83979b0d8",
+    "player_id": "528b549f-1743-45d2-aeb7-6dcad553e403",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "c6a75de1-3b99-449f-9925-1c72414d1068",
+    "session_id": "528e8784-aa1e-4e5e-a773-28c73f33c36b",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "ed6068d8-15a6-4561-9023-b8d553e3680a",
+    "session_id": "528e8784-aa1e-4e5e-a773-28c73f33c36b",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "375b4524-c36e-4f3a-ae87-5445fc1e1d1b",
+    "session_id": "589968e6-5411-4fdb-a2b9-d367ffdcfbd2",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "82967442-6448-40f9-a36e-6b7dd42a27de",
+    "session_id": "589968e6-5411-4fdb-a2b9-d367ffdcfbd2",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "934fb1f9-977c-4d90-aa25-a4b39e75e774",
+    "session_id": "589968e6-5411-4fdb-a2b9-d367ffdcfbd2",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "97a547e7-2e61-40a2-b8ec-22193dbc08cf",
+    "session_id": "589968e6-5411-4fdb-a2b9-d367ffdcfbd2",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "dec4b991-2081-47b6-9e71-429e7d3ae8e2",
+    "session_id": "589968e6-5411-4fdb-a2b9-d367ffdcfbd2",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "e84009c1-4af1-4616-803f-3b89dac42913",
+    "session_id": "589968e6-5411-4fdb-a2b9-d367ffdcfbd2",
+    "player_id": "a50e9eca-606b-41cc-b2cb-7c82374b29a1",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "f8ee11f9-c92d-4ec9-b172-148b27363056",
+    "session_id": "60053aee-38a7-4b1e-b550-1c17277af5e3",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 54.0,
+    "is_winner": true
+  },
+  {
+    "id": "e6f98895-c46c-495d-a79f-0b1d306d7e17",
+    "session_id": "60053aee-38a7-4b1e-b550-1c17277af5e3",
+    "player_id": "528b549f-1743-45d2-aeb7-6dcad553e403",
+    "team": null,
+    "position": 2,
+    "points": 13.0,
+    "is_winner": false
+  },
+  {
+    "id": "68d86153-b905-4f4c-a22e-b7fc855e2cb5",
+    "session_id": "603d1e7b-1400-4063-9610-aaec4ad2d752",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "d32d3673-55f8-4875-8caa-65db006b94b2",
+    "session_id": "603d1e7b-1400-4063-9610-aaec4ad2d752",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "19b933df-9e02-4200-b133-54232fc1e2fc",
+    "session_id": "66bddc66-d130-4988-90c6-5add36a39988",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "962f12b0-3a22-4a32-9ffa-e03ae776bb83",
+    "session_id": "66bddc66-d130-4988-90c6-5add36a39988",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "24cdf74d-b330-4248-9115-f9f8347583de",
+    "session_id": "67417185-8499-4a3f-b5fb-b2267a093ed7",
+    "player_id": "2c8af4b7-a3cb-461d-9c2c-9176a32d2624",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "69bd9466-21ba-48f5-8841-bc374797d79d",
+    "session_id": "67417185-8499-4a3f-b5fb-b2267a093ed7",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "b50e4cf2-e357-4523-88d2-aa622d27782d",
+    "session_id": "67417185-8499-4a3f-b5fb-b2267a093ed7",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "cbaf9cdd-4328-4aa3-a7fc-069b9babb42f",
+    "session_id": "67417185-8499-4a3f-b5fb-b2267a093ed7",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "65a84eaf-c0a5-4e79-8153-feaddd596fc8",
+    "session_id": "6979fea7-18d7-4771-8164-942f5b87ea14",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 1,
+    "points": 111.0,
+    "is_winner": true
+  },
+  {
+    "id": "23e90f40-4cf0-4941-908b-28bf265507df",
+    "session_id": "6979fea7-18d7-4771-8164-942f5b87ea14",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 2,
+    "points": 87.0,
+    "is_winner": false
+  },
+  {
+    "id": "46800365-ea61-4af2-a584-8ed91a6f4d0f",
+    "session_id": "6ae822e2-3ced-451e-bca5-ac1e5fffa28f",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "4d0b072f-4b99-4212-a271-9c816d571984",
+    "session_id": "6ae822e2-3ced-451e-bca5-ac1e5fffa28f",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "52f8be5d-d1ed-44fe-a04f-1a0a53115e75",
+    "session_id": "6ae822e2-3ced-451e-bca5-ac1e5fffa28f",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "8639e10b-7ef7-404e-a6d4-b5376bcd85cf",
+    "session_id": "6ae822e2-3ced-451e-bca5-ac1e5fffa28f",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "9ef169b7-7184-4c46-ae77-503aa641e0c7",
+    "session_id": "6ae822e2-3ced-451e-bca5-ac1e5fffa28f",
+    "player_id": "7df778e0-7327-45ba-93e5-b79b31bebca3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "c4f13910-e06d-42a8-b7fd-6c872ead428f",
+    "session_id": "6ae822e2-3ced-451e-bca5-ac1e5fffa28f",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "43288bf0-a132-432e-800f-78126282ca41",
+    "session_id": "6b749235-2834-414e-9c77-e641a256ecbd",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "88851e53-a5b4-4bd8-b0ac-054ea4949a73",
+    "session_id": "6b749235-2834-414e-9c77-e641a256ecbd",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "7a06178e-5ac6-4d1e-aa8f-759cc6bec9cf",
+    "session_id": "6d8d66d5-c07d-4fca-a002-d843e79f8c9f",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "33a4653a-ad7b-4df9-b990-1ff13a7916f2",
+    "session_id": "6d8d66d5-c07d-4fca-a002-d843e79f8c9f",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "d891b972-8efe-42aa-a6d1-a8a411c8c72c",
+    "session_id": "6d8d66d5-c07d-4fca-a002-d843e79f8c9f",
+    "player_id": "2c8af4b7-a3cb-461d-9c2c-9176a32d2624",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "13f8ee19-f1b3-46b1-afcf-535b75130df1",
+    "session_id": "6e019148-d25f-476f-83dd-91f1cda86d59",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "15142897-d4c8-4ec3-b699-9d979b00416a",
+    "session_id": "6e019148-d25f-476f-83dd-91f1cda86d59",
+    "player_id": "7df778e0-7327-45ba-93e5-b79b31bebca3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "96ae4b7f-71d2-4ba3-b7ef-93245230532d",
+    "session_id": "6e019148-d25f-476f-83dd-91f1cda86d59",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "97b55fe9-9ff5-4fce-a43c-a9e7db8ecd6c",
+    "session_id": "6e019148-d25f-476f-83dd-91f1cda86d59",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "0c803bf4-41d6-4a36-8653-6605d6a19b77",
+    "session_id": "70efe15a-b5e3-48bf-9471-628bfe8f36b8",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "b2f656f9-6fc6-4aad-a5d8-21d2d6519b26",
+    "session_id": "70efe15a-b5e3-48bf-9471-628bfe8f36b8",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "e35edf1d-ebde-437a-967b-5eaf4089c197",
+    "session_id": "70efe15a-b5e3-48bf-9471-628bfe8f36b8",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "ef57d731-3c8b-4abc-a115-a220852fde49",
+    "session_id": "70efe15a-b5e3-48bf-9471-628bfe8f36b8",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "a1bed4a7-515c-40f5-ac6e-a35a3eab8b13",
+    "session_id": "718b7a1e-5c87-4532-8f79-f2fc9513ba03",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "a7649403-f767-4ea8-9326-3777f29e2230",
+    "session_id": "718b7a1e-5c87-4532-8f79-f2fc9513ba03",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "618f857f-a6ed-44c4-9970-2ae7e23ca2fd",
+    "session_id": "72edea6e-d9ef-4a10-84ae-2c58cceb7a25",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "6ee9987e-554e-4ad8-8cc1-7061355ae4ae",
+    "session_id": "72edea6e-d9ef-4a10-84ae-2c58cceb7a25",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "860589e2-3a62-4bf5-8ff9-67b9f1274ffa",
+    "session_id": "72edea6e-d9ef-4a10-84ae-2c58cceb7a25",
+    "player_id": "7df778e0-7327-45ba-93e5-b79b31bebca3",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "21c1918d-18c3-4f3e-8963-7da80b5118b8",
+    "session_id": "73311977-0676-417e-8ac2-d41755f06e67",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "6133346e-89d8-411f-bfc3-41081510320b",
+    "session_id": "73311977-0676-417e-8ac2-d41755f06e67",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "c18b356b-920d-48cd-8679-b59371263da3",
+    "session_id": "73311977-0676-417e-8ac2-d41755f06e67",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "e5b460b5-4df8-4110-bc87-32b0835e0a15",
+    "session_id": "73311977-0676-417e-8ac2-d41755f06e67",
+    "player_id": "2c8af4b7-a3cb-461d-9c2c-9176a32d2624",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "e4f2790d-73a8-4aea-b80e-7e99f09f9d93",
+    "session_id": "74d808af-0a0b-4511-ad38-f55d9af0ebca",
+    "player_id": "3c2deced-ddd6-49e8-b3cf-5d1dfb04d45f",
+    "team": null,
+    "position": 1,
+    "points": 12.0,
+    "is_winner": true
+  },
+  {
+    "id": "7503d1ce-afec-4bc6-8cb6-5ff351f59afe",
+    "session_id": "74d808af-0a0b-4511-ad38-f55d9af0ebca",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 2,
+    "points": 11.0,
+    "is_winner": false
+  },
+  {
+    "id": "12fbb668-08c8-484a-8ed2-9be22424cf9b",
+    "session_id": "74d808af-0a0b-4511-ad38-f55d9af0ebca",
+    "player_id": "0adcf663-60e0-4211-892e-245db6dd38db",
+    "team": null,
+    "position": 3,
+    "points": 9.0,
+    "is_winner": false
+  },
+  {
+    "id": "11a25969-d242-4738-88d8-10d4c1700a06",
+    "session_id": "74d808af-0a0b-4511-ad38-f55d9af0ebca",
+    "player_id": "3958cc97-5507-421f-a821-fd80cc9e7f7f",
+    "team": null,
+    "position": 4,
+    "points": 7.0,
+    "is_winner": false
+  },
+  {
+    "id": "d7b497c2-a608-4b5f-a680-e492f8d7ffad",
+    "session_id": "76422449-3a0a-4632-b5bc-5a376f55ef43",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "e578cf3f-20a0-4662-a13d-649f336c34d3",
+    "session_id": "76422449-3a0a-4632-b5bc-5a376f55ef43",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "dad3410e-4739-4ca4-a927-307c5213f08a",
+    "session_id": "7a94e25c-0932-4b94-98c8-dc997fbff3ba",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "f054760c-c36e-4241-bf2a-1aa18fe2094c",
+    "session_id": "7a94e25c-0932-4b94-98c8-dc997fbff3ba",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "e0f1fa51-71f8-478e-9d09-21b2aaee0b08",
+    "session_id": "7a94e25c-0932-4b94-98c8-dc997fbff3ba",
+    "player_id": "2c8af4b7-a3cb-461d-9c2c-9176a32d2624",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "d6ce9b37-3cb1-4889-a7f0-5ee99052f4ac",
+    "session_id": "7e4f2f0c-6403-415a-9e90-06fa72aa088c",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": null,
+    "position": 1,
+    "points": 65.0,
+    "is_winner": true
+  },
+  {
+    "id": "dc8fa51c-d427-4b2d-b649-75dff78f3325",
+    "session_id": "7e4f2f0c-6403-415a-9e90-06fa72aa088c",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 2,
+    "points": 32.0,
+    "is_winner": false
+  },
+  {
+    "id": "64b25576-fb36-4816-b378-4fd83c835f5e",
+    "session_id": "7e4f2f0c-6403-415a-9e90-06fa72aa088c",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": null,
+    "position": 3,
+    "points": 17.0,
+    "is_winner": false
+  },
+  {
+    "id": "f0414ba2-ac6a-425b-99cf-77f8ea0d292d",
+    "session_id": "7e4f2f0c-6403-415a-9e90-06fa72aa088c",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 4,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "36e85abf-716e-40ac-b661-6c778ff290d3",
+    "session_id": "7e884522-e00c-4040-9ec2-39b7d830c7b6",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "fe4c324e-1379-4e0e-8443-f28f7428ce0a",
+    "session_id": "7e884522-e00c-4040-9ec2-39b7d830c7b6",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "7380063c-cf12-4558-aedd-888ad6a6a973",
+    "session_id": "8251ca0f-869c-46bd-b118-0aae47e61f91",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "8f4eb14b-c66f-45e4-a961-ca91945eab90",
+    "session_id": "8251ca0f-869c-46bd-b118-0aae47e61f91",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "78129b85-fa64-4d2c-a1c6-b649919276d9",
+    "session_id": "8251ca0f-869c-46bd-b118-0aae47e61f91",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "690aedf8-f5d6-434b-9c99-82535b366484",
+    "session_id": "83ac2ee9-a94e-4384-b340-cf080cd86158",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 1,
+    "points": 230.0,
+    "is_winner": true
+  },
+  {
+    "id": "e4cb6827-9f45-495a-8b13-ae93ae935e05",
+    "session_id": "83ac2ee9-a94e-4384-b340-cf080cd86158",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 2,
+    "points": 215.0,
+    "is_winner": false
+  },
+  {
+    "id": "2c55f84f-fb85-4b0b-b885-9107f73db95d",
+    "session_id": "83ac2ee9-a94e-4384-b340-cf080cd86158",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": null,
+    "position": 3,
+    "points": 170.0,
+    "is_winner": false
+  },
+  {
+    "id": "6b18036b-6df1-45a4-b9b5-995e1edee2bc",
+    "session_id": "83ac2ee9-a94e-4384-b340-cf080cd86158",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": null,
+    "position": 4,
+    "points": 150.0,
+    "is_winner": false
+  },
+  {
+    "id": "1fb41f8e-9fad-455d-a74b-c85bcaeaf022",
+    "session_id": "89fc7115-7aeb-490f-98b0-64c6ffbb4d05",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "4ed1a1bc-0cb9-455d-9b95-d4653beab0aa",
+    "session_id": "89fc7115-7aeb-490f-98b0-64c6ffbb4d05",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "4493b8bc-e09c-4db4-afd9-fdb7461b9478",
+    "session_id": "8a5aa90d-9344-45c2-b6e5-2a528114203d",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "66863dff-67da-4dd0-85ed-d2b60d8d03d4",
+    "session_id": "8a5aa90d-9344-45c2-b6e5-2a528114203d",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "8e7cf9cd-a651-44d9-bbf4-63848d3a6a90",
+    "session_id": "8a5aa90d-9344-45c2-b6e5-2a528114203d",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "COOP",
+    "position": null,
+    "points": 1.0,
+    "is_winner": true
+  },
+  {
+    "id": "b49fad41-1223-4e24-935b-40fb05bce7aa",
+    "session_id": "8a5aa90d-9344-45c2-b6e5-2a528114203d",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "cf852101-1751-4abb-bf37-773428fb28a2",
+    "session_id": "8ce8918d-c02f-4103-87a6-a33c00dc3300",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 7.0,
+    "is_winner": true
+  },
+  {
+    "id": "de728ce6-79d6-475a-a3cd-48227ba0972b",
+    "session_id": "8ce8918d-c02f-4103-87a6-a33c00dc3300",
+    "player_id": "528b549f-1743-45d2-aeb7-6dcad553e403",
+    "team": "COOP",
+    "position": null,
+    "points": 7.0,
+    "is_winner": true
+  },
+  {
+    "id": "54589fd3-cfa5-4e18-bfdf-ee88748e1ec6",
+    "session_id": "8f4ecfef-f1a9-40d6-883c-82415eab3764",
+    "player_id": "528b549f-1743-45d2-aeb7-6dcad553e403",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "6cb6ce43-3af8-4083-8efd-dbe96abcd8a9",
+    "session_id": "8f4ecfef-f1a9-40d6-883c-82415eab3764",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "1a383099-ff92-44e3-ab05-7fbd111d89d4",
+    "session_id": "8f84805f-56a5-4cac-a93c-6490c110d5e7",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "495a6dc7-e732-474e-befe-35d3066c5bea",
+    "session_id": "8f84805f-56a5-4cac-a93c-6490c110d5e7",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "694d8e56-0186-4e5b-85f4-12ca46ff2bdd",
+    "session_id": "8f84805f-56a5-4cac-a93c-6490c110d5e7",
+    "player_id": "7df778e0-7327-45ba-93e5-b79b31bebca3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "bfb7aa67-7b43-48f1-84b7-8732ad04ca45",
+    "session_id": "8f84805f-56a5-4cac-a93c-6490c110d5e7",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "c0b61deb-b5af-4e1a-b985-f2ec5014841d",
+    "session_id": "8f84805f-56a5-4cac-a93c-6490c110d5e7",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "d8e9b9b9-f991-4c29-a850-03436f8bd494",
+    "session_id": "8f84805f-56a5-4cac-a93c-6490c110d5e7",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "bf5f97dc-1dad-43ca-bb01-91d2d5b240d7",
+    "session_id": "8fbcd94d-2026-4e48-848d-dd37f245f212",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "d927be6c-f4f0-4ad1-ab55-257b743fe95d",
+    "session_id": "8fbcd94d-2026-4e48-848d-dd37f245f212",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "3c200843-7c33-4dc8-903f-f981b3abd21a",
+    "session_id": "95787c0b-14d1-4328-be4d-c36015b3b5aa",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "d9118343-6464-43a6-9116-44c9bba3f966",
+    "session_id": "95787c0b-14d1-4328-be4d-c36015b3b5aa",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "18a99f16-b943-4ae8-a630-ca595ce077df",
+    "session_id": "95e9bc0c-9979-4f9d-a693-50fc662d73fd",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "d23141f3-d95d-4476-ad5d-bdacb20b253a",
+    "session_id": "95e9bc0c-9979-4f9d-a693-50fc662d73fd",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "f837ff26-81c6-45db-bdf7-ece8fc71215c",
+    "session_id": "96fd13a1-d58d-4d0c-8daa-44b832a632ae",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "fff1ad81-eb5e-43fa-a046-8f19f421765e",
+    "session_id": "96fd13a1-d58d-4d0c-8daa-44b832a632ae",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "0cdab2a2-f9b6-43ef-b267-324c3de3c258",
+    "session_id": "9bb65f46-d475-440c-a73c-6e91849150ec",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "31455220-204f-4640-aa80-7e3c14432662",
+    "session_id": "9bb65f46-d475-440c-a73c-6e91849150ec",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "4ef98170-41df-4f85-99c8-bd512f71d99b",
+    "session_id": "9bb65f46-d475-440c-a73c-6e91849150ec",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "622dbaff-d562-4790-b0f7-39f39bb0f1e0",
+    "session_id": "a283fb05-6912-4128-b5c0-ab79cdc88518",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "d414204d-5271-4811-a57b-7aaa724ef91a",
+    "session_id": "a283fb05-6912-4128-b5c0-ab79cdc88518",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "e3ad445a-7e25-4055-9664-4c3359ff6ebc",
+    "session_id": "a37ad97d-89f6-4495-a546-124c751427bb",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "9be5145d-85ff-4afe-a11c-2d1ba695fb54",
+    "session_id": "a37ad97d-89f6-4495-a546-124c751427bb",
+    "player_id": "2c8af4b7-a3cb-461d-9c2c-9176a32d2624",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "432541d1-1170-4f7d-8f75-d398ded402f4",
+    "session_id": "a37ad97d-89f6-4495-a546-124c751427bb",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "04c1b9a5-c043-426f-aa70-a83174ce6c08",
+    "session_id": "a3f853a5-bce6-482b-9332-842e44243672",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "0a6b3a12-89db-4451-ac98-a8bcb98377ad",
+    "session_id": "a3f853a5-bce6-482b-9332-842e44243672",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "50a8e3d5-519b-48ac-91e4-3ebcc79221e1",
+    "session_id": "a3f853a5-bce6-482b-9332-842e44243672",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "7071a7a8-8093-4865-b33b-29136ecb6861",
+    "session_id": "a3f853a5-bce6-482b-9332-842e44243672",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "c1348158-b501-4978-8dac-c0440adcdaf1",
+    "session_id": "a9672502-973b-4e01-a69e-f825811170a3",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "dc9982fc-beb4-428e-b1e8-8880baf19038",
+    "session_id": "a9672502-973b-4e01-a69e-f825811170a3",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "86f438dc-25a5-4e07-884f-fd5f60752e9b",
+    "session_id": "aa3de40c-dc40-4b9b-a54c-80e3aacbf5b6",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "cac4088a-05b3-4932-8235-958cda4963c3",
+    "session_id": "aa3de40c-dc40-4b9b-a54c-80e3aacbf5b6",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "2f9be594-9272-46d5-90f8-1584ec99478c",
+    "session_id": "aa43998e-2a68-4b88-987f-83afdcfd4ac7",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "73ac759b-2d0d-4a6e-832c-c6daf8db4644",
+    "session_id": "aa43998e-2a68-4b88-987f-83afdcfd4ac7",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "a3dc3cf0-604b-421d-bde9-1b7ea6b5d59d",
+    "session_id": "aa43998e-2a68-4b88-987f-83afdcfd4ac7",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "b2d9dc79-e33a-4a9a-8b4c-34c2215ea390",
+    "session_id": "aa43998e-2a68-4b88-987f-83afdcfd4ac7",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "0235702a-0ea6-4a87-88d9-3afe66bc8ffb",
+    "session_id": "ade75b4a-40fa-4079-879c-0687efed7903",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "ac684abb-fa8c-463b-8c96-e830aa69aa36",
+    "session_id": "ade75b4a-40fa-4079-879c-0687efed7903",
+    "player_id": "528b549f-1743-45d2-aeb7-6dcad553e403",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "6163f20f-46ae-4d40-bbf2-a979268589b7",
+    "session_id": "af44ca1b-3a06-4b07-9d14-38d72e5874d0",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "f6c9a295-22bf-4740-bba5-eb29dc185e01",
+    "session_id": "af44ca1b-3a06-4b07-9d14-38d72e5874d0",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "0fd624a8-acc8-4732-b503-33e63f84a782",
+    "session_id": "af44ca1b-3a06-4b07-9d14-38d72e5874d0",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "12d67b88-16c8-40cc-9966-df9294d6f854",
+    "session_id": "b22aefca-16f8-483d-9424-2624637b03aa",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "97e56330-5b75-4fb1-91c9-dc856f204edd",
+    "session_id": "b22aefca-16f8-483d-9424-2624637b03aa",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "a9127c12-b5ac-4bc5-a686-9f7d953bef96",
+    "session_id": "b22aefca-16f8-483d-9424-2624637b03aa",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "f8097625-2c11-4779-b634-da6b9148ea5e",
+    "session_id": "b22aefca-16f8-483d-9424-2624637b03aa",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "00caaace-400d-463e-913b-acafae3bd739",
+    "session_id": "b2c2fa1b-1bbd-4f4a-98ad-fb64babae569",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "3fbf598a-c99c-4588-8500-affe8244a9ec",
+    "session_id": "b2c2fa1b-1bbd-4f4a-98ad-fb64babae569",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "45191fbf-c9aa-4710-943b-c833e453bedb",
+    "session_id": "b3f0d7aa-6613-4d0d-8b1d-203b8cc4bfa7",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "8edd40d9-d976-4f71-af0b-2c7e5477edc9",
+    "session_id": "b3f0d7aa-6613-4d0d-8b1d-203b8cc4bfa7",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "95b3eadd-b25b-403b-97d9-5d648f010f65",
+    "session_id": "b3f0d7aa-6613-4d0d-8b1d-203b8cc4bfa7",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "a9d6078a-f81a-4d0c-9490-7cc930d08996",
+    "session_id": "b3f0d7aa-6613-4d0d-8b1d-203b8cc4bfa7",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "fc992287-4e38-411c-967a-b9a8d01f4a4e",
+    "session_id": "b4620790-e43f-49d8-8c51-3f3f2de8e317",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 38.0,
+    "is_winner": true
+  },
+  {
+    "id": "bbaccae4-7aab-4464-a5c3-255c93628c59",
+    "session_id": "b4620790-e43f-49d8-8c51-3f3f2de8e317",
+    "player_id": "a790bb25-35f1-4e69-aef6-d91bb9470f3c",
+    "team": null,
+    "position": 2,
+    "points": 12.0,
+    "is_winner": false
+  },
+  {
+    "id": "3280d9de-f1ea-437e-83e7-fcf3ea80894a",
+    "session_id": "b600d585-cda7-4d7c-a88e-25da1d3dc8a7",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "b9bd516e-160d-43be-9bd6-da8677cc17fc",
+    "session_id": "b600d585-cda7-4d7c-a88e-25da1d3dc8a7",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "df99fdf6-9f4b-44ec-8274-f17091d6e676",
+    "session_id": "b600d585-cda7-4d7c-a88e-25da1d3dc8a7",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "e93d1d20-0290-4926-8c72-4cf1ea9cb9f3",
+    "session_id": "b600d585-cda7-4d7c-a88e-25da1d3dc8a7",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "4b850ef9-0b34-404a-925a-ae4dab0f156f",
+    "session_id": "b7860d2e-c8dd-4157-8370-ca28521af075",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "9594519e-6ed8-4ce2-9d6f-879fe473aeaf",
+    "session_id": "b7860d2e-c8dd-4157-8370-ca28521af075",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "8b0eccc9-9785-40dd-8295-74971e815d4b",
+    "session_id": "b845b443-8080-4e44-8e23-5ae77642cff6",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "aecfe109-3134-43f0-a581-5d6a4728aecd",
+    "session_id": "b845b443-8080-4e44-8e23-5ae77642cff6",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "483917d5-5e59-4485-9c5f-942e995c686e",
+    "session_id": "c06bf63f-189a-4218-a4c5-a44998d65150",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "c3d952bf-0294-4eaf-aed1-b98594b4704f",
+    "session_id": "c06bf63f-189a-4218-a4c5-a44998d65150",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "d410cdd3-07a3-40b3-90c8-725bb98bfbb8",
+    "session_id": "c06bf63f-189a-4218-a4c5-a44998d65150",
+    "player_id": "2c8af4b7-a3cb-461d-9c2c-9176a32d2624",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "f35588d3-a0cf-4f4c-b8e7-2b023a03ee88",
+    "session_id": "c10c3976-96a9-41a0-ad16-65cc1261d7a1",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "fe1daf2f-3ea4-49f5-b2c9-8464238dfd02",
+    "session_id": "c10c3976-96a9-41a0-ad16-65cc1261d7a1",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "b1b43f55-4383-43c2-8253-02246fc17a72",
+    "session_id": "c19208af-2212-4284-9812-110ad363eb1c",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 8.0,
+    "is_winner": true
+  },
+  {
+    "id": "3b1cc053-947a-4bfc-b750-d2a50ed29c75",
+    "session_id": "c19208af-2212-4284-9812-110ad363eb1c",
+    "player_id": "3c2deced-ddd6-49e8-b3cf-5d1dfb04d45f",
+    "team": null,
+    "position": 2,
+    "points": 7.0,
+    "is_winner": false
+  },
+  {
+    "id": "3bf7d6c0-28b0-48a8-8cfd-eb1bc4dee01e",
+    "session_id": "c19208af-2212-4284-9812-110ad363eb1c",
+    "player_id": "3958cc97-5507-421f-a821-fd80cc9e7f7f",
+    "team": null,
+    "position": 2,
+    "points": 7.0,
+    "is_winner": false
+  },
+  {
+    "id": "ffa6bf54-7b54-4998-9ac7-347a9d921da5",
+    "session_id": "c19208af-2212-4284-9812-110ad363eb1c",
+    "player_id": "0adcf663-60e0-4211-892e-245db6dd38db",
+    "team": null,
+    "position": 4,
+    "points": 3.0,
+    "is_winner": false
+  },
+  {
+    "id": "8b5c9c62-bacf-4a19-81df-acdbd4a63877",
+    "session_id": "c35d0482-4e2b-4b99-abb5-24b27f47ce36",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "dbf346c5-12dd-432b-9470-534663eedadb",
+    "session_id": "c35d0482-4e2b-4b99-abb5-24b27f47ce36",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "264f8469-808b-4dfe-9bee-d0959dea3559",
+    "session_id": "c35d0482-4e2b-4b99-abb5-24b27f47ce36",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "22d23b9d-90fa-4279-b91a-dc721c63d6fd",
+    "session_id": "c7c837ca-ef60-4e0d-93c4-fb3f139e7fd0",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "49523ed5-587e-498e-ad25-6ee50680270b",
+    "session_id": "c7c837ca-ef60-4e0d-93c4-fb3f139e7fd0",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "71f79ee3-e57a-46d9-8440-0a3b3f8303b7",
+    "session_id": "c7c837ca-ef60-4e0d-93c4-fb3f139e7fd0",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "e1224c0a-652d-454c-96ea-9f8d619a49ce",
+    "session_id": "c7c837ca-ef60-4e0d-93c4-fb3f139e7fd0",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "f588fa96-4f70-4f5d-9bde-0a71d214f2ef",
+    "session_id": "c7c837ca-ef60-4e0d-93c4-fb3f139e7fd0",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "6a607312-f616-4e9d-8e6a-174ca79531da",
+    "session_id": "c91773a9-12d2-45c8-9cb2-abec821bdee7",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "a80574ed-2588-492a-b1bf-74e229098a65",
+    "session_id": "c91773a9-12d2-45c8-9cb2-abec821bdee7",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "bd98f337-c809-4748-a690-57d281916234",
+    "session_id": "c91773a9-12d2-45c8-9cb2-abec821bdee7",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "ccffb57d-b396-4075-a07c-961e2d34f6c4",
+    "session_id": "c91773a9-12d2-45c8-9cb2-abec821bdee7",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "1037ca77-1a87-44be-9236-b0ada7ed608b",
+    "session_id": "d3210774-b372-4327-8917-5260807106ce",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "d5b34d18-556c-46f5-98f1-971a7bf8022c",
+    "session_id": "d3210774-b372-4327-8917-5260807106ce",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "14e5cac3-eee3-4299-b28a-a2968a7c6cae",
+    "session_id": "d61e34f4-1b4e-4c29-ae3b-dd4b50be8cb7",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "a1798d57-8e58-4dd8-affb-65080239ddef",
+    "session_id": "d61e34f4-1b4e-4c29-ae3b-dd4b50be8cb7",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "0d38e4e1-7d3d-4ea7-b3b5-68ec7933aa1b",
+    "session_id": "d625d17a-271d-45fe-b93a-76a5ecb603ce",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "3f157d4b-a8e0-4f3f-b987-479ad1fbf02c",
+    "session_id": "d625d17a-271d-45fe-b93a-76a5ecb603ce",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "36e67d6f-a6cb-49c2-bea8-51d368ab1c7e",
+    "session_id": "d7f5b141-7fa1-4017-b78c-d80eb27b5031",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "a5d2f9d9-6f1f-4dd2-b8d1-742b7b9a5ed6",
+    "session_id": "d7f5b141-7fa1-4017-b78c-d80eb27b5031",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "895e49ea-81db-49e5-a105-3b53fd6d17e4",
+    "session_id": "d82fff33-7a14-4ded-ad8c-bb0d99887911",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "20e3549c-ad26-47f0-afbb-54ada023ffca",
+    "session_id": "d82fff33-7a14-4ded-ad8c-bb0d99887911",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "880dd819-e0b1-4d35-9966-e840b19d2191",
+    "session_id": "d82fff33-7a14-4ded-ad8c-bb0d99887911",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "4029f511-87d5-4f12-9aed-31724fbe0615",
+    "session_id": "db5b5a91-4274-4dd4-b7ae-3be33ae18216",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "471d3d65-0d67-4c72-848e-2b6258af46c6",
+    "session_id": "db5b5a91-4274-4dd4-b7ae-3be33ae18216",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "a83e6841-f1c6-43f2-a34c-c1aab8f67112",
+    "session_id": "db5b5a91-4274-4dd4-b7ae-3be33ae18216",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "ba9651f9-2250-4488-86d8-e1555a5bec7c",
+    "session_id": "db5b5a91-4274-4dd4-b7ae-3be33ae18216",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "1bb2164e-2066-49f8-95ab-3f39ae7a22f3",
+    "session_id": "dc04840a-41b4-46c9-80fd-b3278af7ad19",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "2b9c84bb-49fd-444c-992c-805b76bd9a2c",
+    "session_id": "dc04840a-41b4-46c9-80fd-b3278af7ad19",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "02d7a9d1-eb7e-4ecc-8a27-249d4201cf02",
+    "session_id": "dc0f14b0-19f9-4471-8fb8-fe327a7d81b0",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "3df5267c-19c4-442a-812a-40861b4b778f",
+    "session_id": "dc0f14b0-19f9-4471-8fb8-fe327a7d81b0",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "7f86cc56-b5f9-4d77-9e4e-26307d5533dd",
+    "session_id": "de4745bc-b8c0-4042-b2d4-af9347b83779",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "COOP",
+    "position": null,
+    "points": 2.0,
+    "is_winner": true
+  },
+  {
+    "id": "ac568f86-6350-4890-84de-9bba27e7d0aa",
+    "session_id": "de4745bc-b8c0-4042-b2d4-af9347b83779",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 2.0,
+    "is_winner": true
+  },
+  {
+    "id": "b0d4cd47-fcec-4a90-ac51-ca5ba227b591",
+    "session_id": "de4745bc-b8c0-4042-b2d4-af9347b83779",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 2.0,
+    "is_winner": true
+  },
+  {
+    "id": "c352cb9b-41ff-49d1-a8e5-1e65361ddf7b",
+    "session_id": "de4745bc-b8c0-4042-b2d4-af9347b83779",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 2.0,
+    "is_winner": true
+  },
+  {
+    "id": "d11ad67b-66be-4918-b59b-a8d8fe1a482a",
+    "session_id": "deab7a6c-c3ce-48d6-916e-7108641a718e",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "7b96f80b-555f-4525-8908-ffa1317aa139",
+    "session_id": "deab7a6c-c3ce-48d6-916e-7108641a718e",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "8d338418-5f03-4e65-b9c5-514ffbe1ee9c",
+    "session_id": "deab7a6c-c3ce-48d6-916e-7108641a718e",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "846866ba-e10b-4f12-bc3f-6e429d61651a",
+    "session_id": "deab7a6c-c3ce-48d6-916e-7108641a718e",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": null,
+    "position": 4,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "3cb72d53-c013-4b83-8468-62c9293f612b",
+    "session_id": "e5385c23-7667-439a-b0f0-50c33aeeb7dd",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "b56c33c1-a96b-4c25-9e59-f965082c53a8",
+    "session_id": "e5385c23-7667-439a-b0f0-50c33aeeb7dd",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "ce39631d-363a-40cb-bbd7-4e7f366e6dc1",
+    "session_id": "e5385c23-7667-439a-b0f0-50c33aeeb7dd",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "16209fd1-cc7a-4e2f-bb1b-fcf69aca28f7",
+    "session_id": "e6d1a65b-1be4-481d-bb18-10fbbfcbcf51",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "6e791493-e461-4239-8ca6-f9a77b66214c",
+    "session_id": "e6d1a65b-1be4-481d-bb18-10fbbfcbcf51",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "4418fd44-55f8-408d-9138-fb9cff1b7b0b",
+    "session_id": "e8339d70-d087-455e-87bf-e60ad0eaa744",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "9e5742ac-e855-4d41-a1c2-6cbc5c520eb5",
+    "session_id": "e8339d70-d087-455e-87bf-e60ad0eaa744",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "b099cb18-2ab8-4999-a824-4fa8044ad902",
+    "session_id": "e8339d70-d087-455e-87bf-e60ad0eaa744",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "728b64ff-cfb8-4811-aff1-be8b84a3074f",
+    "session_id": "e8ec7f02-1a06-4656-bc9d-a4fe52050b8a",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": null,
+    "position": 1,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "f7158c70-95ee-4b55-8830-340aaab85727",
+    "session_id": "e8ec7f02-1a06-4656-bc9d-a4fe52050b8a",
+    "player_id": "5ad3aa54-a106-410d-ba91-e29bd26f2ddb",
+    "team": null,
+    "position": 2,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "209d1349-402a-4caa-a33c-a1623ede6a54",
+    "session_id": "e8ec7f02-1a06-4656-bc9d-a4fe52050b8a",
+    "player_id": "ff75aa91-a119-48f6-9290-c08ff9226f50",
+    "team": null,
+    "position": 3,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "b5e5498c-6020-4521-953c-3084e41d57e4",
+    "session_id": "e9aa5bb0-80af-4f5f-8df7-e441c8ee69ab",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "bcd2814d-87de-4e0c-b54e-054beedf6c17",
+    "session_id": "e9aa5bb0-80af-4f5f-8df7-e441c8ee69ab",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "dbc721ee-f115-4c51-a40a-2b8ff1252c4a",
+    "session_id": "e9aa5bb0-80af-4f5f-8df7-e441c8ee69ab",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "e89e6d1c-7956-45a8-bcde-e6fdafff4ada",
+    "session_id": "e9aa5bb0-80af-4f5f-8df7-e441c8ee69ab",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "268a843f-a02e-4f99-99ae-7ed85a8e982b",
+    "session_id": "f2c329a2-d1d7-4897-b82a-12dd3c3f04ef",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "4e6cc671-1038-46a9-8f73-4e54220ca0f2",
+    "session_id": "f2c329a2-d1d7-4897-b82a-12dd3c3f04ef",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "4ee2ca86-2889-4cb1-b28f-2072021100a3",
+    "session_id": "f2c329a2-d1d7-4897-b82a-12dd3c3f04ef",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "ba502ca3-e49b-4056-aedd-4ab615d9f8a9",
+    "session_id": "f2c329a2-d1d7-4897-b82a-12dd3c3f04ef",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "2d4b6304-6968-449b-99b4-8d505d84e142",
+    "session_id": "f65275ad-826f-4796-9615-699a27704b10",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "8643caae-5c7d-449a-b3a4-0706a032c30e",
+    "session_id": "f65275ad-826f-4796-9615-699a27704b10",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "ca15a25a-d0e0-4c65-b7cd-631be75d6654",
+    "session_id": "f65275ad-826f-4796-9615-699a27704b10",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "A",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "d5fad07b-ca03-4684-bdb4-6ea5ca833aa4",
+    "session_id": "f65275ad-826f-4796-9615-699a27704b10",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "team": "B",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "2da081dd-227d-4f80-a817-4a4a2cbfd763",
+    "session_id": "fae9041f-6c51-4b56-92de-637d386c8cde",
+    "player_id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "a48e1df2-7187-40f5-94b6-9ec8e12a798d",
+    "session_id": "fae9041f-6c51-4b56-92de-637d386c8cde",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "af46d7ee-8643-414d-b0b6-43b156a51cf5",
+    "session_id": "fae9041f-6c51-4b56-92de-637d386c8cde",
+    "player_id": "7df778e0-7327-45ba-93e5-b79b31bebca3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": false
+  },
+  {
+    "id": "b69bbec8-93e7-42ea-a674-36ee732c50f4",
+    "session_id": "fbfae291-393a-4746-b651-6e90230628e1",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  },
+  {
+    "id": "c72a1599-d5c1-4987-8dc8-656ce2b0cfca",
+    "session_id": "fbfae291-393a-4746-b651-6e90230628e1",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "team": "COOP",
+    "position": null,
+    "points": 0.0,
+    "is_winner": true
+  }
+]

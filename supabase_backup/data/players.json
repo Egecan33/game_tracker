@@ -1,0 +1,304 @@
+[
+  {
+    "id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "name": "Nazlı Birol",
+    "nickname": "Aki",
+    "joined_on": "2025-08-15T11:46:20.992323+00:00",
+    "pin_code": "0000",
+    "emoji_lock": "🐳",
+    "bag": {
+      "pity": {
+        "BOX_GOLD": 1,
+        "BOX_SILVER": 1
+      },
+      "cosmetics": {
+        "owned": [],
+        "equipped": {}
+      },
+      "inventory": {
+        "DUST": 20,
+        "BOX_GOLD": 1,
+        "BOX_BRONZE": 1,
+        "EMOJI_CROWN": 5
+      }
+    }
+  },
+  {
+    "id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "name": "Egecan Aktan",
+    "nickname": "FrostyFox",
+    "joined_on": "2025-08-15T11:46:27.691403+00:00",
+    "pin_code": "1116",
+    "emoji_lock": "😎",
+    "bag": {
+      "pity": {
+        "BOX_GOLD": 31,
+        "BOX_BRONZE": 6,
+        "BOX_SILVER": 5
+      },
+      "cosmetics": {
+        "owned": [
+          "font_hand",
+          "title_speedrunner"
+        ],
+        "equipped": {
+          "font": "font_hand",
+          "title": "title_speedrunner"
+        }
+      },
+      "inventory": {
+        "DUST": 403,
+        "EMOJI_FIRE": 53,
+        "EMOJI_STAR": 29,
+        "EMOJI_APPLE": 21,
+        "EMOJI_CROWN": 8,
+        "V_PICK_NEXT_GAME": 1
+      }
+    }
+  },
+  {
+    "id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "name": "Eren Özdemir",
+    "nickname": "RakunBoi",
+    "joined_on": "2025-08-15T11:47:02.142093+00:00",
+    "pin_code": "0000",
+    "emoji_lock": "😀",
+    "bag": {
+      "pity": {
+        "BOX_GOLD": 2,
+        "BOX_BRONZE": 2,
+        "BOX_SILVER": 1
+      },
+      "cosmetics": {
+        "owned": [],
+        "equipped": {}
+      },
+      "inventory": {
+        "DUST": 49,
+        "BOX_GOLD": 27,
+        "BOX_BRONZE": 33,
+        "BOX_SILVER": 22,
+        "EMOJI_FIRE": 3,
+        "EMOJI_STAR": 8
+      }
+    }
+  },
+  {
+    "id": "fd56f26f-34b0-47b4-9e1e-d6c18ea5634d",
+    "name": "Egehan Kınık",
+    "nickname": "Egion",
+    "joined_on": "2025-08-15T11:47:11.140061+00:00",
+    "pin_code": "1327",
+    "emoji_lock": "😀",
+    "bag": {
+      "pity": {
+        "BOX_BRONZE": 1
+      },
+      "cosmetics": {
+        "owned": [],
+        "equipped": {}
+      },
+      "inventory": {
+        "BOX_GOLD": 6,
+        "BOX_BRONZE": 10,
+        "BOX_SILVER": 16,
+        "EMOJI_FIRE": 3
+      }
+    }
+  },
+  {
+    "id": "528b549f-1743-45d2-aeb7-6dcad553e403",
+    "name": "İzel Kantar",
+    "nickname": "Capybara",
+    "joined_on": "2025-08-15T11:47:33.517938+00:00",
+    "pin_code": "0000",
+    "emoji_lock": "😀",
+    "bag": {
+      "cosmetics": {
+        "owned": [],
+        "equipped": {}
+      },
+      "inventory": {
+        "BOX_GOLD": 2,
+        "BOX_BRONZE": 5
+      }
+    }
+  },
+  {
+    "id": "3c2deced-ddd6-49e8-b3cf-5d1dfb04d45f",
+    "name": "Yonca Aktan",
+    "nickname": "JigglyPuff",
+    "joined_on": "2025-08-15T11:47:41.359344+00:00",
+    "pin_code": "0000",
+    "emoji_lock": "😀",
+    "bag": {
+      "pity": {
+        "BOX_SILVER": 2
+      },
+      "cosmetics": {
+        "owned": [],
+        "equipped": {}
+      },
+      "inventory": {
+        "DUST": 18,
+        "BOX_BRONZE": 1,
+        "BOX_SILVER": 2,
+        "EMOJI_CROWN": 4
+      }
+    }
+  },
+  {
+    "id": "0adcf663-60e0-4211-892e-245db6dd38db",
+    "name": "Esin Aktan",
+    "nickname": null,
+    "joined_on": "2025-08-15T11:47:51.876264+00:00",
+    "pin_code": "3691",
+    "emoji_lock": "😀",
+    "bag": {
+      "pity": {
+        "BOX_BRONZE": 1
+      },
+      "cosmetics": {
+        "owned": [],
+        "equipped": {}
+      },
+      "inventory": {
+        "DUST": 7,
+        "BOX_BRONZE": 1
+      }
+    }
+  },
+  {
+    "id": "3958cc97-5507-421f-a821-fd80cc9e7f7f",
+    "name": "Cem Aktan",
+    "nickname": null,
+    "joined_on": "2025-08-15T11:47:55.902011+00:00",
+    "pin_code": "0000",
+    "emoji_lock": "😀",
+    "bag": {
+      "cosmetics": {
+        "owned": [],
+        "equipped": {}
+      },
+      "inventory": {
+        "BOX_BRONZE": 1
+      }
+    }
+  },
+  {
+    "id": "a50e9eca-606b-41cc-b2cb-7c82374b29a1",
+    "name": "İnci Albek",
+    "nickname": "incident",
+    "joined_on": "2025-08-15T11:52:24.954193+00:00",
+    "pin_code": "0000",
+    "emoji_lock": "😀",
+    "bag": {}
+  },
+  {
+    "id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "name": "Ozan Bali",
+    "nickname": "MrBali09",
+    "joined_on": "2025-08-15T12:54:03.391926+00:00",
+    "pin_code": "7579",
+    "emoji_lock": "😀",
+    "bag": {
+      "pity": {
+        "BOX_SILVER": 1
+      },
+      "cosmetics": {
+        "owned": [],
+        "equipped": {}
+      },
+      "inventory": {
+        "BOX_GOLD": 12,
+        "BOX_BRONZE": 12,
+        "BOX_SILVER": 21,
+        "EMOJI_APPLE": 5
+      }
+    }
+  },
+  {
+    "id": "ff75aa91-a119-48f6-9290-c08ff9226f50",
+    "name": "Elif Yenilmez",
+    "nickname": "theAvenger",
+    "joined_on": "2025-08-15T23:56:21.382883+00:00",
+    "pin_code": "0000",
+    "emoji_lock": "😀",
+    "bag": {}
+  },
+  {
+    "id": "5ad3aa54-a106-410d-ba91-e29bd26f2ddb",
+    "name": "Mehmet Ali Küçükyılmaz",
+    "nickname": "Mali",
+    "joined_on": "2025-08-15T23:56:31.030855+00:00",
+    "pin_code": "0000",
+    "emoji_lock": "😀",
+    "bag": {}
+  },
+  {
+    "id": "7df778e0-7327-45ba-93e5-b79b31bebca3",
+    "name": "Taner Altıner",
+    "nickname": "Kralll99",
+    "joined_on": "2025-08-16T17:56:35.527555+00:00",
+    "pin_code": "0000",
+    "emoji_lock": "😀",
+    "bag": {}
+  },
+  {
+    "id": "2c8af4b7-a3cb-461d-9c2c-9176a32d2624",
+    "name": "Min Seok Kim",
+    "nickname": "Kim",
+    "joined_on": "2025-08-22T19:11:25.860734+00:00",
+    "pin_code": null,
+    "emoji_lock": null,
+    "bag": {}
+  },
+  {
+    "id": "6fd65e1b-74bd-4fc2-931a-f14c9730dce6",
+    "name": "Orhun Morkoç",
+    "nickname": "Blank121",
+    "joined_on": "2025-09-07T14:01:20.665917+00:00",
+    "pin_code": "2612",
+    "emoji_lock": "😎",
+    "bag": {
+      "pity": {
+        "BOX_GOLD": 2
+      },
+      "cosmetics": {
+        "owned": [],
+        "equipped": {}
+      },
+      "inventory": {
+        "DUST": 35,
+        "EMOJI_STAR": 7
+      }
+    }
+  },
+  {
+    "id": "6fa73c67-b39d-4270-9aa2-971adca9aaf9",
+    "name": "Berk Orbay",
+    "nickname": null,
+    "joined_on": "2025-10-07T18:27:13.212424+00:00",
+    "pin_code": null,
+    "emoji_lock": null,
+    "bag": {}
+  },
+  {
+    "id": "3d63287a-93a2-4808-bf9b-66d046ab1eb1",
+    "name": "Taha Tonbaklar",
+    "nickname": "reganoq",
+    "joined_on": "2025-12-04T17:33:22.531152+00:00",
+    "pin_code": null,
+    "emoji_lock": null,
+    "bag": {}
+  },
+  {
+    "id": "a790bb25-35f1-4e69-aef6-d91bb9470f3c",
+    "name": "Ekin Akoğuz",
+    "nickname": null,
+    "joined_on": "2026-01-05T20:54:42.592292+00:00",
+    "pin_code": null,
+    "emoji_lock": null,
+    "bag": {}
+  }
+]

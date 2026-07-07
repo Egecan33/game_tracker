@@ -1,0 +1,268 @@
+[
+  {
+    "id": "971c835f-7d55-41a4-a4b0-0afdb074b817",
+    "date_key": "2025-08-17",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 7,
+    "rounds_played": 7,
+    "duration_s": 60,
+    "started_at": "2025-08-17T10:36:38.604448+00:00",
+    "finished_at": "2025-08-17T10:37:38.752257+00:00",
+    "is_best_for_day": false,
+    "meta": {
+      "minigame": "Odd Emoji Out"
+    }
+  },
+  {
+    "id": "3bb27ea4-59db-4915-9fbf-1662937d4503",
+    "date_key": "2025-08-17",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 11,
+    "rounds_played": 11,
+    "duration_s": 60,
+    "started_at": "2025-08-17T12:14:32.377171+00:00",
+    "finished_at": "2025-08-17T12:15:45.33759+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Odd Emoji Out"
+    }
+  },
+  {
+    "id": "f512bfb0-97a3-481e-a3d6-2a9aa145f2d1",
+    "date_key": "2025-08-17",
+    "player_id": "81c8c447-cbaf-4be5-9101-9edee26637e3",
+    "score": 6,
+    "rounds_played": 7,
+    "duration_s": 60,
+    "started_at": "2025-08-17T13:01:44.186631+00:00",
+    "finished_at": "2025-08-17T13:03:01.371954+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Odd Emoji Out"
+    }
+  },
+  {
+    "id": "962bb478-07fb-46e5-83be-300ef0c219f9",
+    "date_key": "2025-08-17",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "score": 8,
+    "rounds_played": 8,
+    "duration_s": 60,
+    "started_at": "2025-08-17T13:42:23.251234+00:00",
+    "finished_at": "2025-08-17T13:43:26.772141+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Odd Emoji Out"
+    }
+  },
+  {
+    "id": "ab601d3b-1b77-4d5f-b5bd-dfff1b5b9343",
+    "date_key": "2025-08-17",
+    "player_id": "3c2deced-ddd6-49e8-b3cf-5d1dfb04d45f",
+    "score": 8,
+    "rounds_played": 8,
+    "duration_s": 60,
+    "started_at": "2025-08-17T16:43:45.609711+00:00",
+    "finished_at": "2025-08-17T16:44:56.928335+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Odd Emoji Out"
+    }
+  },
+  {
+    "id": "66dfac87-570b-41e7-bd25-6ff2ebc6a4be",
+    "date_key": "2025-08-17",
+    "player_id": "0adcf663-60e0-4211-892e-245db6dd38db",
+    "score": 7,
+    "rounds_played": 7,
+    "duration_s": 60,
+    "started_at": "2025-08-17T19:00:04.705537+00:00",
+    "finished_at": "2025-08-17T19:01:06.51923+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Odd Emoji Out"
+    }
+  },
+  {
+    "id": "e94f8411-99bc-4782-9bc0-e81388c372bc",
+    "date_key": "2025-08-18",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 9,
+    "rounds_played": 9,
+    "duration_s": 60,
+    "started_at": "2025-08-18T18:17:32.425524+00:00",
+    "finished_at": "2025-08-18T18:18:33.005862+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Odd Emoji Out"
+    }
+  },
+  {
+    "id": "2897c7aa-6fc0-41a4-bdbf-12dea4dd6751",
+    "date_key": "2025-08-23",
+    "player_id": "80504ce3-8d54-4c10-8d34-7e400027caa4",
+    "score": 7,
+    "rounds_played": 7,
+    "duration_s": 60,
+    "started_at": "2025-08-23T12:19:26.520072+00:00",
+    "finished_at": "2025-08-23T12:20:30.900692+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Odd Emoji Out"
+    }
+  },
+  {
+    "id": "3b39894c-b57b-42ab-8366-dfc68670713c",
+    "date_key": "2025-09-05",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 1,
+    "rounds_played": 1,
+    "duration_s": 28,
+    "started_at": "2025-09-05T12:11:09.269929+00:00",
+    "finished_at": "2025-09-05T12:11:37.995776+00:00",
+    "is_best_for_day": false,
+    "meta": {
+      "minigame": "Galio's Den"
+    }
+  },
+  {
+    "id": "216afa55-f8f9-4136-aadb-606884da47df",
+    "date_key": "2025-09-05",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 0,
+    "rounds_played": 0,
+    "duration_s": 39,
+    "started_at": "2025-09-05T12:28:26.669802+00:00",
+    "finished_at": "2025-09-05T12:29:06.215806+00:00",
+    "is_best_for_day": false,
+    "meta": {
+      "minigame": "Galio's Den"
+    }
+  },
+  {
+    "id": "fbd5d6d5-1c7b-46bc-9a38-fabd6d6a099f",
+    "date_key": "2025-09-05",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 10,
+    "rounds_played": 10,
+    "duration_s": 415,
+    "started_at": "2025-09-05T12:34:22.562809+00:00",
+    "finished_at": "2025-09-05T12:41:17.740695+00:00",
+    "is_best_for_day": false,
+    "meta": {
+      "minigame": "Galio's Den"
+    }
+  },
+  {
+    "id": "0d5d8588-e31e-4859-a4ca-1cb22bad6c34",
+    "date_key": "2025-09-05",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 0,
+    "rounds_played": 0,
+    "duration_s": 401,
+    "started_at": "2025-09-05T15:55:52.175348+00:00",
+    "finished_at": "2025-09-05T16:02:33.218722+00:00",
+    "is_best_for_day": false,
+    "meta": {
+      "minigame": "Galio's Den"
+    }
+  },
+  {
+    "id": "adbaaaa3-5ec1-4fd9-94d8-fee1e76894f9",
+    "date_key": "2025-09-05",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "score": 0,
+    "rounds_played": 0,
+    "duration_s": 330,
+    "started_at": "2025-09-05T16:00:19.378466+00:00",
+    "finished_at": "2025-09-05T16:05:49.92643+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Galio's Den"
+    }
+  },
+  {
+    "id": "c23c8953-fe2e-4417-831f-9df8c5beffbb",
+    "date_key": "2025-09-05",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 15,
+    "rounds_played": 15,
+    "duration_s": 819,
+    "started_at": "2025-09-05T18:44:57.107477+00:00",
+    "finished_at": "2025-09-05T18:58:36.228619+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Galio's Den"
+    }
+  },
+  {
+    "id": "88829c0b-85db-4175-8539-dbedd1dfcebc",
+    "date_key": "2025-09-06",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 1,
+    "rounds_played": 1,
+    "duration_s": 88,
+    "started_at": "2025-09-06T22:40:04.563035+00:00",
+    "finished_at": "2025-09-06T22:41:33.33151+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Galio's Den"
+    }
+  },
+  {
+    "id": "e544c17c-d19f-46e4-b831-ce2b85f18149",
+    "date_key": "2025-09-06",
+    "player_id": "4b99fd4d-39d2-45c3-80cb-01ae57e2a6b9",
+    "score": 3,
+    "rounds_played": 3,
+    "duration_s": 80,
+    "started_at": "2025-09-06T22:41:14.676803+00:00",
+    "finished_at": "2025-09-06T22:42:35.651788+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Galio's Den"
+    }
+  },
+  {
+    "id": "79513a91-002e-414d-99e7-9ac1915e81d7",
+    "date_key": "2025-10-09",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 2,
+    "rounds_played": 2,
+    "duration_s": 47,
+    "started_at": "2025-10-09T10:20:39.055256+00:00",
+    "finished_at": "2025-10-09T10:21:26.882379+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Galio's Den"
+    }
+  },
+  {
+    "id": "af0ba67e-9cd4-459a-93d6-1e410ed814ae",
+    "date_key": "2025-10-15",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 1,
+    "rounds_played": 1,
+    "duration_s": 27,
+    "started_at": "2025-10-15T18:19:21.145318+00:00",
+    "finished_at": "2025-10-15T18:19:48.808318+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Galio's Den"
+    }
+  },
+  {
+    "id": "6678fbe0-709e-47bb-a3ff-631a3c3ef825",
+    "date_key": "2025-12-04",
+    "player_id": "3c46dbff-adaf-4781-812e-3ac1be41114b",
+    "score": 4,
+    "rounds_played": 4,
+    "duration_s": 293,
+    "started_at": "2025-12-04T18:13:16.037184+00:00",
+    "finished_at": "2025-12-04T18:18:09.08272+00:00",
+    "is_best_for_day": true,
+    "meta": {
+      "minigame": "Galio's Den"
+    }
+  }
+]
